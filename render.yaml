@@ -4,7 +4,8 @@ services:
     runtime: node
     rootDir: backend
     plan: free
-    region: frankfurt
+    # The live service runs in Virginia; Frankfurt is closer to Cotonou for a rebuild (KI-024).
+    region: virginia
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && npm run seed:prod && npm run start:prod
     healthCheckPath: /health
@@ -29,4 +30,19 @@ services:
         value: "true"
       - key: JWT_EXPIRES_IN
         value: 7d
+      # Per address: a room of testers on one wifi shares it.
+      - key: RATE_LIMIT_PER_MIN
+        value: "600"
+      # Login attempts per account and address, then per address across accounts.
+      - key: LOGIN_LIMIT_PER_MIN
+        value: "5"
+      - key: LOGIN_IP_LIMIT_PER_MIN
+        value: "30"
+      # Speech provider quota is 5 requests a minute.
+      - key: VOICE_LIMIT_PER_MIN
+        value: "4"
+      - key: LANGUES229_API_KEY
+        sync: false
+      - key: LANGUES229_BEARER
+        sync: false
 

@@ -7,6 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { LotDto } from './dto/lot.dto';
 import { ParcelDto } from './dto/parcel.dto';
+import { SowingDto } from './dto/sowing.dto';
 import { TraceService } from './trace.service';
 
 @ApiTags('tracabilite')
@@ -20,6 +21,18 @@ export class TraceController {
   @Roles('PRODUCER', 'ADVISOR')
   parcel(@CurrentUser() user: AuthenticatedUser, @Body() dto: ParcelDto) {
     return this.trace.parcel(user, dto);
+  }
+
+  @Post('parcels/:id/sowing')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('PRODUCER', 'ADVISOR')
+  sowing(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: SowingDto,
+  ) {
+    return this.trace.declareSowing(user, id, dto.sownAt);
   }
 
   @Get('parcels/mine')

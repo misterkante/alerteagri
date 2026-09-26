@@ -176,6 +176,46 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
   });
 
+  describe("J'ai semé: a producer dates the sowing of their own parcel", () => {
+    it("starts the crop reminders once, refuses others' parcels and future dates", async () => {
+      const parcel = await http()
+        .post('/parcels')
+        .set(as('producer'))
+        .send({ cropId: 'soja', areaHa: 1, lat: 9.35, lon: 2.61 })
+        .expect(201);
+      await http()
+        .post(`/parcels/${parcel.body.id}/sowing`)
+        .set(as('otherProducer'))
+        .send({ sownAt: new Date().toISOString() })
+        .expect(403);
+      await http()
+        .post(`/parcels/${parcel.body.id}/sowing`)
+        .set(as('producer'))
+        .send({ sownAt: new Date(Date.now() + 5 * 86400000).toISOString() })
+        .expect(400);
+      await http()
+        .post(`/parcels/${parcel.body.id}/sowing`)
+        .set(as('producer'))
+        .send({ sownAt: new Date().toISOString() })
+        .expect(201);
+      expect(
+        await prisma.stepReminder.count({
+          where: { parcelId: parcel.body.id },
+        }),
+      ).toBeGreaterThan(0);
+      await http()
+        .post(`/parcels/${parcel.body.id}/sowing`)
+        .set(as('producer'))
+        .send({ sownAt: new Date().toISOString() })
+        .expect(409);
+      const steps = await http()
+        .get(`/parcels/${parcel.body.id}/steps`)
+        .set(as('producer'))
+        .expect(200);
+      expect(steps.body.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('10-digit Beninese numbers (since 1 January 2025)', () => {
     it('a producer signs in with the number as people write it today', async () => {
       for (const phone of [

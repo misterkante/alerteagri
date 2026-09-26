@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -19,6 +20,14 @@ const EUDR_CROPS = ['soja'];
 
 const PUBLIC_COORD_DECIMALS = 3;
 
+const assertSowingDate = (sownAt: Date) => {
+  const age = (Date.now() - sownAt.getTime()) / 86400000;
+  if (age < -1 || age > 365)
+    throw new BadRequestException(
+      'La date de semis doit être passée et de moins d’un an',
+    );
+};
+
 @Injectable()
 export class TraceService {
   constructor(
@@ -35,13 +44,7 @@ export class TraceService {
     );
     if (!(await this.prisma.crop.findUnique({ where: { id: dto.cropId } })))
       throw new BadRequestException('Culture inconnue');
-    if (dto.sownAt) {
-      const age = (Date.now() - dto.sownAt.getTime()) / 86400000;
-      if (age < -1 || age > 365)
-        throw new BadRequestException(
-          'La date de semis doit être passée et de moins d’un an',
-        );
-    }
+    if (dto.sownAt) assertSowingDate(dto.sownAt);
     const p = await this.prisma.parcel.create({
       data: {
         ownerId: target.id,
@@ -53,16 +56,7 @@ export class TraceService {
         sownAt: dto.sownAt,
       },
     });
-    if (dto.sownAt) {
-      await this.prisma.stepReminder.createMany({
-        data: cropSteps(dto.cropId, dto.sownAt).map((s) => ({
-          parcelId: p.id,
-          code: s.code,
-          label: s.label,
-          due: s.due,
-        })),
-      });
-    }
+    if (dto.sownAt) await this.scheduleSteps(p.id, dto.cropId, dto.sownAt);
     await this.audit.log(
       actor.userId,
       'parcel.create',
@@ -213,5 +207,56 @@ export class TraceService {
         ? 'Géolocalisation de la parcelle disponible (règlement européen anti-déforestation, applicable au 30 décembre 2026).'
         : null,
     };
+  }
+
+  private scheduleSteps(parcelId: string, cropId: string, sownAt: Date) {
+    return this.prisma.stepReminder.createMany({
+      data: cropSteps(cropId, sownAt).map((s) => ({
+        parcelId,
+        code: s.code,
+        label: s.label,
+        due: s.due,
+      })),
+    });
+  }
+
+  // "J'ai semé": the producer (or the advisor of their commune) dates the sowing of an existing parcel;
+  // crop-stage reminders and the water balance start from it.
+  async declareSowing(
+    actor: AuthenticatedUser,
+    parcelId: string,
+    sownAt: Date,
+  ) {
+    const parcel = await this.prisma.parcel.findUnique({
+      where: { id: parcelId },
+    });
+    if (!parcel) throw new NotFoundException('Parcelle introuvable');
+    const me = await this.prisma.user.findUniqueOrThrow({
+      where: { id: actor.userId },
+    });
+    const allowed =
+      parcel.ownerId === me.id ||
+      (me.role === 'ADVISOR' && me.communeId === parcel.communeId);
+    if (!allowed)
+      throw new ForbiddenException('Parcelle d’un autre producteur');
+    if (parcel.sownAt)
+      throw new ConflictException(
+        'Le semis de cette parcelle est déjà déclaré',
+      );
+    assertSowingDate(sownAt);
+    const updated = await this.prisma.parcel.update({
+      where: { id: parcelId },
+      data: { sownAt },
+    });
+    await this.scheduleSteps(parcelId, parcel.cropId, sownAt);
+    await this.audit.log(
+      me.id,
+      'parcel.sowing',
+      'Parcel',
+      parcelId,
+      { sownAt: sownAt.toISOString() },
+      parcel.ownerId === me.id ? undefined : parcel.ownerId,
+    );
+    return updated;
   }
 }

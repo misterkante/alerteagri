@@ -434,6 +434,36 @@ async function main() {
       },
     });
   }
+  // Demo offers from the demo producers, near the reference prices, so the market is never empty.
+  // Fixed clientIds keep the seed idempotent: a sold or withdrawn offer is never reopened.
+  const demoListings: [string, string, number, number][] = [
+    ['+22997000001', 'mais', 800, 215],
+    ['+22997000001', 'soja', 600, 325],
+    ['+22997000002', 'mais', 1200, 205],
+    ['+22997000003', 'niebe', 300, 470],
+    ['+22997000003', 'soja', 1000, 315],
+    ['+22997000004', 'mais', 400, 235],
+    ['+22997000004', 'manioc', 900, 95],
+    ['+22997000004', 'tomate', 250, 340],
+  ];
+  for (const [
+    i,
+    [phone, cropId, quantityKg, pricePerKg],
+  ] of demoListings.entries()) {
+    const seller = await prisma.user.findUniqueOrThrow({ where: { phone } });
+    await prisma.listing.upsert({
+      where: { clientId: `demo-listing-${i + 1}` },
+      update: {},
+      create: {
+        clientId: `demo-listing-${i + 1}`,
+        sellerId: seller.id,
+        cropId,
+        communeId: seller.communeId,
+        quantityKg,
+        pricePerKg,
+      },
+    });
+  }
   // eslint-disable-next-line no-console
   console.log(
     `Seed: ${await prisma.commune.count()} communes, ${await prisma.crop.count()} cultures, ${await prisma.user.count()} comptes`,

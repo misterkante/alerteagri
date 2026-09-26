@@ -15,7 +15,7 @@
 
 Sources et niveaux de preuve : [`docs/JUSTIFICATION_RECHERCHE.md`](docs/JUSTIFICATION_RECHERCHE.md).
 
-Données tierces : météo et géocodage [Open-Meteo](https://open-meteo.com) (CC BY 4.0) ; coordonnées de cinq chefs-lieux © contributeurs [OpenStreetMap](https://www.openstreetmap.org/copyright), sous licence ODbL ; voix en fon et yoruba [229langues](https://api229langues.vercel.app).
+Données tierces : météo et géocodage [Open-Meteo](https://open-meteo.com) (CC BY 4.0) ; coordonnées de cinq chefs-lieux © contributeurs [OpenStreetMap](https://www.openstreetmap.org/copyright), sous licence ODbL.
 
 ## Ce que fait AlerteAgri
 
@@ -26,7 +26,7 @@ Données tierces : météo et géocodage [Open-Meteo](https://open-meteo.com) (C
 | Producteur | Signaler un ravageur en deux gestes (culture, symptôme en pictogramme), même sans réseau | application, USSD |
 | Producteur | Conseil anti-aflatoxines après la récolte (sécher, couvrir, attendre) | application, SMS |
 | Producteur | « Ce pesticide est-il homologué ? » | application, USSD |
-| Producteur | Fiches pratiques et réglementaires lues à voix haute : en français par le téléphone, en fon et yoruba par une voix de synthèse signalée (229langues), et dans toute langue enregistrée par un conseiller (fon, yoruba, bariba, dendi) | application |
+| Producteur | Fiches pratiques et réglementaires en pictogrammes, avec l'audio enregistré par un conseiller en fon, yoruba, bariba ou dendi ; aucune voix de synthèse | application |
 | Producteur, acheteur | Offres, prix de référence avec leur source, blocage des exports interdits (soja, cajou bruts) | application, API ouverte |
 | Conseiller ATDA | Inscrit et accompagne ses producteurs, agit en leur nom (tracé), enregistre l'audio des fiches depuis son téléphone | application |
 | Agent ATDA | Valide les signalements, voit la carte des 77 communes, la boucle de chaque alerte (envoyés, lus, actions, délais), la valeur protégée et l'offre déclarée face aux capacités de la GDIZ | tableau de bord |

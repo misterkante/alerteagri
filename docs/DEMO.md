@@ -9,8 +9,8 @@ Avant de commencer, 5 minutes avant la démo :
 ## 1. Le producteur qui ne lit pas (1 min 30)
 
 - Onglet producteur : l'accueil n'est fait que de pictogrammes.
-- **Semer maintenant ?** Le résultat est lu à voix haute. Montrez Bohicon (Sud, petite saison) puis Parakou (Nord, hors saison) : le conseil dépend de la pluie **réellement tombée** et suit le critère agronomique de Sivakumar. Le graphique distingue la pluie mesurée et la pluie prévue.
-- **Fiches et règles** : « Écouter en français », puis la même fiche en fon ou en yoruba. La voix de synthèse (229langues, développeur de Cotonou) est signalée comme telle, et « Texte lu » montre ce qu'elle prononce. Côté agent, **Contenus** génère la voix d'une fiche en un clic, à partir d'un texte écrit par un locuteur ou d'une traduction automatique signalée ; un enregistrement fait par le conseiller la remplace toujours.
+- **Semer maintenant ?** Le verdict s'affiche en premier, avec son pictogramme. Montrez Bohicon (Sud, petite saison) puis Parakou (Nord, hors saison) : le conseil dépend de la pluie **réellement tombée** et suit le critère agronomique de Sivakumar. Le graphique distingue la pluie mesurée et la pluie prévue.
+- **Fiches et règles** : chaque fiche porte son pictogramme ; l'audio en langue locale est celui qu'un conseiller enregistre depuis son téléphone (bouton **Enregistrer** dans Contenus). Les voix de synthèse ont été retirées après écoute : seule la voix d'une personne est diffusée.
 
 ## 2. Sans smartphone, sans internet (1 min)
 
@@ -47,5 +47,5 @@ Avant de commencer, 5 minutes avant la démo :
 
 - `docs/architecture/` : carte des packages et diagrammes de séquence.
 - `docs/KNOWN_ISSUES.md` : ce qui est simulé, dit franchement.
-- `docs/REPORT.md` et `docs/security/pentest-2026-09-26.md` : 318 tests (86 métier, 60 API sur la vraie base, 172 dans le navigateur dont 144 audits d'accessibilité) ; des failles réintroduites volontairement pour vérifier que les tests les détectent ; un pentest de l'API en ligne.
+- `docs/REPORT.md` et `docs/security/pentest-2026-09-26.md` : 320 tests (87 métier, 61 API sur la vraie base, 172 dans le navigateur dont 144 audits d'accessibilité) ; des failles réintroduites volontairement pour vérifier que les tests les détectent ; un pentest de l'API en ligne.
 - `.github/workflows/ci.yml` et `.husky/` : rien n'entre dans le dépôt sans lint, types stricts, tests et audit d'accessibilité.

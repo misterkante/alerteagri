@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { DROUGHT_WINDOW_DAYS } from '../src/dashboard/dashboard.constants';
 import { AppModule } from '../src/app.module';
 import { configure } from '../src/main';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -10,7 +11,6 @@ import { WeatherService } from '../src/weather/weather.service';
 import { AlertsService } from '../src/alerts/alerts.service';
 import { SMS_PROVIDER } from '../src/alerts/sms.provider';
 import { signReceipt } from '../src/domain/tax';
-import { DROUGHT_WINDOW_DAYS } from '../src/dashboard/dashboard.module';
 
 process.env.RECEIPT_SECRET = 'test-receipt-secret-0123456789';
 process.env.USSD_SECRET = 'test-ussd-secret';

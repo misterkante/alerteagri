@@ -6,13 +6,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIN_SALT_ROUNDS } from './auth.constants';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { Role } from '@prisma/client';
 import { JwtPayload } from './jwt-payload.interface';
-
-const PIN_SALT_ROUNDS = 10;
 
 @Injectable()
 export class AuthService {

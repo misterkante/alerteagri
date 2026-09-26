@@ -1,4 +1,4 @@
-import { cropSteps, waterBalance, droughtIndex } from './season';
+import { cropSteps, waterBalance, droughtIndex, CROP_CYCLES } from './season';
 import { famewsCsv, sniffImage } from './exports';
 
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -178,7 +178,6 @@ describe('F-16 image sniffing', () => {
   });
 });
 
-import { CROP_CYCLES } from './season';
 import { neighborIds } from './geo';
 
 describe('mutation survivors V2', () => {

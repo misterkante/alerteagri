@@ -3,10 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { resolveProducer } from '../common/acting-for';
+import { AuthenticatedUser } from '../auth/jwt-payload.interface';
+import { AuditService } from '../common/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { sowingAdvice } from '../domain/sowing';
 import { postHarvestAdvice, HUMID_PCT } from '../domain/postharvest';
 import { AlertsService } from '../alerts/alerts.service';
+import { HarvestDto } from './dto/harvest.dto';
 
 const mmdd = (d: Date) => d.toISOString().slice(5, 10);
 const fr = (m: string) => `${m.slice(3)}/${m.slice(0, 2)}`;
@@ -17,6 +21,7 @@ export class AdviceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly alerts: AlertsService,
+    private readonly audit: AuditService,
   ) {}
 
   async sowing(communeId: string, cropId: string, now = new Date()) {
@@ -104,5 +109,29 @@ export class AdviceService {
       notified = true;
     }
     return { ...advice, harvestId: harvest.id, notified };
+  }
+
+  // A producer declares a harvest, or an advisor does it for one of the producers they follow.
+  async declareHarvest(user: AuthenticatedUser, dto: HarvestDto) {
+    const { target, actingForId } = await resolveProducer(
+      this.prisma,
+      user,
+      dto.forUserId,
+    );
+    const result = await this.postHarvest(
+      target.id,
+      target.communeId,
+      dto.cropId,
+      dto.harvestDate,
+    );
+    await this.audit.log(
+      user.userId,
+      'harvest.declare',
+      'Harvest',
+      (result as { harvestId?: string }).harvestId,
+      { cropId: dto.cropId },
+      actingForId,
+    );
+    return result;
   }
 }

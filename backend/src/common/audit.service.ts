@@ -1,4 +1,4 @@
-import { Global, Injectable, Module } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,7 +19,3 @@ export class AuditService {
     });
   }
 }
-
-@Global()
-@Module({ providers: [AuditService], exports: [AuditService] })
-export class AuditModule {}

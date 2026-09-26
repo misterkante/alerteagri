@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
 import { evaluateClimateRule, ClimateKind } from '../domain/climate-rules';
 import { neighborIds, MAX_NEIGHBORS } from '../domain/geo';
+import { RuleDto } from './dto/rule.dto';
 import { SMS_PROVIDER, SmsProvider } from './sms.provider';
 
 const CLIMATE_KINDS: AlertKind[] = [
@@ -338,5 +339,31 @@ export class AlertsService {
           : null,
       },
     }));
+  }
+
+  rules() {
+    return this.prisma.alertRule.findMany({ orderBy: { id: 'asc' } });
+  }
+
+  async updateRule(id: string, dto: RuleDto, agentId: string) {
+    if (!(await this.prisma.alertRule.findUnique({ where: { id } })))
+      throw new NotFoundException('Règle inconnue');
+    const rule = await this.prisma.alertRule.update({
+      where: { id },
+      data: dto,
+    });
+    await this.audit.log(agentId, 'rule.update', 'AlertRule', id, { ...dto });
+    return rule;
+  }
+
+  // A commune account only ever sees its own alerts, whatever filter it sends.
+  async listFor(
+    userId: string,
+    filter: { communeId?: string; status?: 'OPEN' | 'CLOSED' },
+  ) {
+    const me = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    return this.list(filter, me.role === 'COMMUNE' ? me.communeId : undefined);
   }
 }

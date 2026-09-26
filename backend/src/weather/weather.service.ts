@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export const PAST_DAYS = 30;
@@ -35,20 +40,32 @@ export class WeatherService implements OnModuleInit, OnModuleDestroy {
   async refresh() {
     const run = await this.prisma.weatherRun.create({ data: {} });
     try {
-      const communes = await this.prisma.commune.findMany({ orderBy: { id: 'asc' } });
-      const url = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
-        latitude: communes.map((c) => c.lat).join(','),
-        longitude: communes.map((c) => c.lon).join(','),
-        daily: 'precipitation_sum,temperature_2m_max,relative_humidity_2m_mean,et0_fao_evapotranspiration',
-        past_days: String(PAST_DAYS),
-        forecast_days: String(FORECAST_DAYS),
-        timezone: 'Africa/Porto-Novo',
+      const communes = await this.prisma.commune.findMany({
+        orderBy: { id: 'asc' },
       });
-      const res = await this.fetcher(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      const url =
+        'https://api.open-meteo.com/v1/forecast?' +
+        new URLSearchParams({
+          latitude: communes.map((c) => c.lat).join(','),
+          longitude: communes.map((c) => c.lon).join(','),
+          daily:
+            'precipitation_sum,temperature_2m_max,relative_humidity_2m_mean,et0_fao_evapotranspiration',
+          past_days: String(PAST_DAYS),
+          forecast_days: String(FORECAST_DAYS),
+          timezone: 'Africa/Porto-Novo',
+        });
+      const res = await this.fetcher(url, {
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
       if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
       const body = await res.json();
-      const list: { daily: OpenMeteoDaily }[] = Array.isArray(body) ? body : [body];
-      if (list.length !== communes.length) throw new Error(`Open-Meteo a renvoyé ${list.length} séries pour ${communes.length} communes`);
+      const list: { daily: OpenMeteoDaily }[] = Array.isArray(body)
+        ? body
+        : [body];
+      if (list.length !== communes.length)
+        throw new Error(
+          `Open-Meteo a renvoyé ${list.length} séries pour ${communes.length} communes`,
+        );
       const today = new Date().toISOString().slice(0, 10);
       const rows = list.flatMap((entry, i) =>
         entry.daily.time.map((day, j) => ({
@@ -61,24 +78,39 @@ export class WeatherService implements OnModuleInit, OnModuleDestroy {
           isForecast: day > today,
         })),
       );
-      const from = rows.reduce((min, r) => (r.date < min ? r.date : min), rows[0].date);
+      const from = rows.reduce(
+        (min, r) => (r.date < min ? r.date : min),
+        rows[0].date,
+      );
       await this.prisma.$transaction([
         this.prisma.weatherDaily.deleteMany({ where: { date: { gte: from } } }),
         this.prisma.weatherDaily.createMany({ data: rows }),
       ]);
-      return this.prisma.weatherRun.update({ where: { id: run.id }, data: { ok: true, communes: communes.length, finishedAt: new Date() } });
+      return this.prisma.weatherRun.update({
+        where: { id: run.id },
+        data: { ok: true, communes: communes.length, finishedAt: new Date() },
+      });
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       this.logger.error(`Relevé météo échoué : ${error}`);
-      return this.prisma.weatherRun.update({ where: { id: run.id }, data: { ok: false, error, finishedAt: new Date() } });
+      return this.prisma.weatherRun.update({
+        where: { id: run.id },
+        data: { ok: false, error, finishedAt: new Date() },
+      });
     }
   }
 
   lastSuccess() {
-    return this.prisma.weatherRun.findFirst({ where: { ok: true }, orderBy: { finishedAt: 'desc' } });
+    return this.prisma.weatherRun.findFirst({
+      where: { ok: true },
+      orderBy: { finishedAt: 'desc' },
+    });
   }
 
   series(communeId: string) {
-    return this.prisma.weatherDaily.findMany({ where: { communeId }, orderBy: { date: 'asc' } });
+    return this.prisma.weatherDaily.findMany({
+      where: { communeId },
+      orderBy: { date: 'asc' },
+    });
   }
 }

@@ -1,6 +1,26 @@
-import { Body, Controller, Get, Module, NotFoundException, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Module,
+  NotFoundException,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 import { AuditService } from '../common/audit.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -12,11 +32,11 @@ import { AlertsService } from './alerts.service';
 import { InternalOutboxProvider, SMS_PROVIDER } from './sms.provider';
 
 class RuleDto {
-  @IsNumber() @Min(0) @Max(1000) threshold: number;
-  @IsInt() @Min(1) @Max(30) windowDays: number;
-  @IsInt() @Min(0) @Max(200) neighborKm: number;
-  @IsBoolean() active: boolean;
-  @IsString() @Length(10, 240) message: string;
+  @IsNumber() @Min(0) @Max(1000) threshold!: number;
+  @IsInt() @Min(1) @Max(30) windowDays!: number;
+  @IsInt() @Min(0) @Max(200) neighborKm!: number;
+  @IsBoolean() active!: boolean;
+  @IsString() @Length(10, 240) message!: string;
 }
 
 class AckDto {
@@ -28,7 +48,11 @@ class AckDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('alerts')
 export class AlertsController {
-  constructor(private readonly alerts: AlertsService, private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(
+    private readonly alerts: AlertsService,
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get('rules')
   @Roles('AGENT', 'ADMIN')
@@ -38,18 +62,34 @@ export class AlertsController {
 
   @Put('rules/:id')
   @Roles('AGENT', 'ADMIN')
-  async updateRule(@Param('id') id: string, @Body() dto: RuleDto, @CurrentUser() user: AuthenticatedUser) {
-    if (!(await this.prisma.alertRule.findUnique({ where: { id } }))) throw new NotFoundException('Règle inconnue');
+  async updateRule(
+    @Param('id') id: string,
+    @Body() dto: RuleDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!(await this.prisma.alertRule.findUnique({ where: { id } })))
+      throw new NotFoundException('Règle inconnue');
     const r = await this.prisma.alertRule.update({ where: { id }, data: dto });
-    await this.audit.log(user.userId, 'rule.update', 'AlertRule', id, { ...dto });
+    await this.audit.log(user.userId, 'rule.update', 'AlertRule', id, {
+      ...dto,
+    });
     return r;
   }
 
   @Get()
   @Roles('AGENT', 'ADMIN', 'COMMUNE')
-  async list(@CurrentUser() user: AuthenticatedUser, @Query('communeId') communeId?: string, @Query('status') status?: 'OPEN' | 'CLOSED') {
-    const me = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    return this.alerts.list({ communeId, status }, me.role === 'COMMUNE' ? me.communeId : undefined);
+  async list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('communeId') communeId?: string,
+    @Query('status') status?: 'OPEN' | 'CLOSED',
+  ) {
+    const me = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.userId },
+    });
+    return this.alerts.list(
+      { communeId, status },
+      me.role === 'COMMUNE' ? me.communeId : undefined,
+    );
   }
 
   @Post('evaluate')
@@ -76,14 +116,21 @@ export class AlertsController {
   }
 
   @Post('notifications/:id/ack')
-  ack(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Body() dto: AckDto) {
+  ack(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: AckDto,
+  ) {
     return this.alerts.acknowledge(id, user.userId, dto.action);
   }
 }
 
 @Module({
   controllers: [AlertsController],
-  providers: [AlertsService, { provide: SMS_PROVIDER, useClass: InternalOutboxProvider }],
+  providers: [
+    AlertsService,
+    { provide: SMS_PROVIDER, useClass: InternalOutboxProvider },
+  ],
   exports: [AlertsService],
 })
 export class AlertsModule {}

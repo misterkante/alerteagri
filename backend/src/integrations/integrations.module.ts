@@ -1,4 +1,12 @@
-import { Controller, Get, Injectable, Module, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Injectable,
+  Module,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Prisma } from '@prisma/client';
@@ -31,25 +39,70 @@ const FAW_SYMPTOMS = ['feuilles-trouees', 'chenilles', 'sciure-cornet'];
 @Injectable()
 export class IntegrationsService {
   readonly sipi: TerminalMarketAdapter = new SimulatedSipiAdapter();
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async famews() {
     const reports = await this.prisma.pestReport.findMany({
-      where: { status: 'VALIDATED', cropId: 'mais', symptom: { in: FAW_SYMPTOMS } },
-      include: { commune: true, crop: true }, orderBy: { createdAt: 'asc' },
+      where: {
+        status: 'VALIDATED',
+        cropId: 'mais',
+        symptom: { in: FAW_SYMPTOMS },
+      },
+      include: { commune: true, crop: true },
+      orderBy: { createdAt: 'asc' },
     });
-    return famewsCsv(reports.map((r) => ({ date: r.createdAt, commune: r.commune.name, department: r.commune.department, lat: r.lat, lon: r.lon, crop: r.crop.name, symptom: r.symptom })));
+    return famewsCsv(
+      reports.map((r) => ({
+        date: r.createdAt,
+        commune: r.commune.name,
+        department: r.commune.department,
+        lat: r.lat,
+        lon: r.lon,
+        crop: r.crop.name,
+        symptom: r.symptom,
+      })),
+    );
   }
 
   async sendLotsToSipi(actorId: string) {
-    const lots = await this.prisma.lot.findMany({ include: { parcel: { include: { crop: true, commune: true } } }, orderBy: { createdAt: 'desc' }, take: 500 });
+    const lots = await this.prisma.lot.findMany({
+      include: { parcel: { include: { crop: true, commune: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
     const payload = lots.map((l) => ({
-      lotCode: l.code, crop: l.parcel.crop.id, weightKg: l.weightKg, humidityPct: l.humidityPct, harvestDate: l.harvestDate.toISOString().slice(0, 10),
-      origin: { commune: l.parcel.commune.name, department: l.parcel.commune.department, lat: Number(l.parcel.lat.toFixed(3)), lon: Number(l.parcel.lon.toFixed(3)) },
+      lotCode: l.code,
+      crop: l.parcel.crop.id,
+      weightKg: l.weightKg,
+      humidityPct: l.humidityPct,
+      harvestDate: l.harvestDate.toISOString().slice(0, 10),
+      origin: {
+        commune: l.parcel.commune.name,
+        department: l.parcel.commune.department,
+        lat: Number(l.parcel.lat.toFixed(3)),
+        lon: Number(l.parcel.lon.toFixed(3)),
+      },
     }));
     const status = await this.sipi.sendLots(payload);
-    const log = await this.prisma.integrationLog.create({ data: { target: this.sipi.name, status, simulated: this.sipi.simulated, items: payload.length, payload: payload as unknown as Prisma.InputJsonValue } });
-    await this.audit.log(actorId, 'integration.sipi', 'IntegrationLog', log.id, { items: payload.length });
+    const log = await this.prisma.integrationLog.create({
+      data: {
+        target: this.sipi.name,
+        status,
+        simulated: this.sipi.simulated,
+        items: payload.length,
+        payload: payload as unknown as Prisma.InputJsonValue,
+      },
+    });
+    await this.audit.log(
+      actorId,
+      'integration.sipi',
+      'IntegrationLog',
+      log.id,
+      { items: payload.length },
+    );
     return log;
   }
 }
@@ -60,11 +113,17 @@ export class IntegrationsService {
 @Roles('AGENT', 'ADMIN')
 @Controller()
 export class IntegrationsController {
-  constructor(private readonly integrations: IntegrationsService, private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly integrations: IntegrationsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get('exports/famews')
   async famews(@Res({ passthrough: true }) res: Response) {
-    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="famews-benin.csv"' });
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="famews-benin.csv"',
+    });
     return this.integrations.famews();
   }
 
@@ -75,9 +134,23 @@ export class IntegrationsController {
 
   @Get('integrations/log')
   log() {
-    return this.prisma.integrationLog.findMany({ select: { id: true, target: true, status: true, simulated: true, items: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 20 });
+    return this.prisma.integrationLog.findMany({
+      select: {
+        id: true,
+        target: true,
+        status: true,
+        simulated: true,
+        items: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
   }
 }
 
-@Module({ controllers: [IntegrationsController], providers: [IntegrationsService] })
+@Module({
+  controllers: [IntegrationsController],
+  providers: [IntegrationsService],
+})
 export class IntegrationsModule {}

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Module, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Module,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsIn, IsOptional, IsString } from 'class-validator';
@@ -12,31 +20,75 @@ import { AlertsModule } from '../alerts/alerts.module';
 import { AdviceService } from './advice.service';
 
 class HarvestDto {
-  @IsIn(['mais', 'arachide', 'sorgho', 'riz', 'niebe', 'soja', 'coton', 'manioc', 'igname', 'anacarde', 'tomate']) cropId: string;
-  @Type(() => Date) @IsDate() harvestDate: Date;
+  @IsIn([
+    'mais',
+    'arachide',
+    'sorgho',
+    'riz',
+    'niebe',
+    'soja',
+    'coton',
+    'manioc',
+    'igname',
+    'anacarde',
+    'tomate',
+  ])
+  cropId!: string;
+  @Type(() => Date) @IsDate() harvestDate!: Date;
   @IsOptional() @IsString() forUserId?: string;
 }
 
 @ApiTags('conseils')
 @Controller('advice')
 export class AdviceController {
-  constructor(private readonly advice: AdviceService, private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(
+    private readonly advice: AdviceService,
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get('sowing')
-  sowing(@Query('communeId') communeId: string, @Query('cropId') cropId: string) {
+  sowing(
+    @Query('communeId') communeId: string,
+    @Query('cropId') cropId: string,
+  ) {
     return this.advice.sowing(communeId, cropId);
   }
 
   @Post('harvest')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async harvest(@CurrentUser() user: AuthenticatedUser, @Body() dto: HarvestDto) {
-    const { target, actingForId } = await resolveProducer(this.prisma, user, dto.forUserId);
-    const result = await this.advice.postHarvest(target.id, target.communeId, dto.cropId, dto.harvestDate);
-    await this.audit.log(user.userId, 'harvest.declare', 'Harvest', (result as { harvestId?: string }).harvestId, { cropId: dto.cropId }, actingForId);
+  async harvest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: HarvestDto,
+  ) {
+    const { target, actingForId } = await resolveProducer(
+      this.prisma,
+      user,
+      dto.forUserId,
+    );
+    const result = await this.advice.postHarvest(
+      target.id,
+      target.communeId,
+      dto.cropId,
+      dto.harvestDate,
+    );
+    await this.audit.log(
+      user.userId,
+      'harvest.declare',
+      'Harvest',
+      (result as { harvestId?: string }).harvestId,
+      { cropId: dto.cropId },
+      actingForId,
+    );
     return result;
   }
 }
 
-@Module({ imports: [AlertsModule], controllers: [AdviceController], providers: [AdviceService], exports: [AdviceService] })
+@Module({
+  imports: [AlertsModule],
+  controllers: [AdviceController],
+  providers: [AdviceService],
+  exports: [AdviceService],
+})
 export class AdviceModule {}

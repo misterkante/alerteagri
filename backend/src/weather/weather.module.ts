@@ -1,4 +1,11 @@
-import { Controller, Get, Module, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Module,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -17,7 +24,11 @@ export class WeatherController {
 
   @Get(':communeId')
   async series(@Param('communeId') communeId: string) {
-    return { source: 'Open-Meteo', lastRun: await this.weather.lastSuccess(), days: await this.weather.series(communeId) };
+    return {
+      source: 'Open-Meteo',
+      lastRun: await this.weather.lastSuccess(),
+      days: await this.weather.series(communeId),
+    };
   }
 
   @Post('refresh')
@@ -29,5 +40,9 @@ export class WeatherController {
   }
 }
 
-@Module({ controllers: [WeatherController], providers: [WeatherService], exports: [WeatherService] })
+@Module({
+  controllers: [WeatherController],
+  providers: [WeatherService],
+  exports: [WeatherService],
+})
 export class WeatherModule {}

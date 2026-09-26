@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,12 +22,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    const existing = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
     if (existing) {
       throw new ConflictException('Ce numero est deja enregistre');
     }
 
-    if (!(await this.prisma.commune.findUnique({ where: { id: dto.communeId } }))) {
+    if (
+      !(await this.prisma.commune.findUnique({ where: { id: dto.communeId } }))
+    ) {
       throw new BadRequestException('Commune inconnue');
     }
     const pinHash = await bcrypt.hash(dto.pin, PIN_SALT_ROUNDS);
@@ -40,7 +49,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    const user = await this.prisma.user.findUnique({
+      where: { phone: dto.phone },
+    });
     if (!user) {
       throw new UnauthorizedException('Numero ou PIN incorrect');
     }
@@ -53,8 +64,18 @@ export class AuthService {
     return this.buildSession(user);
   }
 
-  private buildSession(user: { id: string; phone: string; role: Role; name: string; communeId: string }) {
-    const payload: JwtPayload = { sub: user.id, phone: user.phone, role: user.role };
+  private buildSession(user: {
+    id: string;
+    phone: string;
+    role: Role;
+    name: string;
+    communeId: string;
+  }) {
+    const payload: JwtPayload = {
+      sub: user.id,
+      phone: user.phone,
+      role: user.role,
+    };
     return {
       accessToken: this.jwtService.sign(payload),
       user: {

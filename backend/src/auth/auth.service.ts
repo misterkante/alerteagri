@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { Role } from '@prisma/client';
 import { JwtPayload } from './jwt-payload.interface';
 
 const PIN_SALT_ROUNDS = 10;
@@ -52,7 +53,7 @@ export class AuthService {
     return this.buildSession(user);
   }
 
-  private buildSession(user: { id: string; phone: string; role: any; name: string; communeId: string }) {
+  private buildSession(user: { id: string; phone: string; role: Role; name: string; communeId: string }) {
     const payload: JwtPayload = { sub: user.id, phone: user.phone, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),

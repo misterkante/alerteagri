@@ -1,0 +1,10 @@
+{
+  "testRunner": "jest",
+  "jest": { "configFile": "package.json" },
+  "mutate": ["src/domain/**/*.ts", "!src/domain/**/*.spec.ts"],
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "coverageAnalysis": "perTest",
+  "checkers": [],
+  "tempDirName": ".stryker-tmp"
+}

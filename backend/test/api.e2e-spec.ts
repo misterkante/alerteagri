@@ -13,6 +13,7 @@ process.env.RECEIPT_SECRET = 'test-receipt-secret-0123456789';
 process.env.USSD_SECRET = 'test-ussd-secret';
 process.env.DEMO_MODE = 'true';
 process.env.RATE_LIMIT_PER_MIN = '100000';
+process.env.LOGIN_LIMIT_PER_MIN = '12';
 process.env.SEED_STAFF_PIN = '4821';
 
 const uid = () => randomBytes(6).toString('hex');
@@ -42,6 +43,11 @@ describe('AlerteAgri API (e2e, real database)', () => {
   }, 120000);
 
   afterAll(() => app.close());
+
+  it('health endpoint answers for the hosting health check', async () => {
+    const r = await http().get('/health').expect(200);
+    expect(r.body).toEqual({ status: 'ok', service: 'alerteagri-api' });
+  });
 
   describe('F-01 roles and acting for', () => {
     it('AC2 self-registration as ADMIN is refused', async () => {
@@ -73,6 +79,15 @@ describe('AlerteAgri API (e2e, real database)', () => {
       expect(res.body).toMatchObject({ role: 'PRODUCER', communeId: 'parakou' });
       expect(res.body.pinHash).toBeUndefined();
       await http().post('/users/producers').set(as('producer')).send({ phone: phone(), name: 'X', pin: '2222' }).expect(403);
+    });
+  });
+
+  describe('security: PIN brute force', () => {
+    it('login attempts are limited per minute', async () => {
+      const codes: number[] = [];
+      for (let i = 0; i < 14; i++) codes.push((await http().post('/auth/login').send({ phone: '+22997000003', pin: '0000' })).status);
+      expect(codes).toContain(429);
+      expect(codes.filter((c) => c === 401).length).toBeLessThanOrEqual(12);
     });
   });
 

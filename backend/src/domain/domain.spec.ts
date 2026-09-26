@@ -215,3 +215,80 @@ describe('F-14 protected value', () => {
     expect(protectedValueFcfa(0, 1800, 200)).toBe(0);
   });
 });
+
+describe('mutation survivors: boundaries and ordering', () => {
+  const inWindow = { today: d('2026-05-20'), inWindow: true, nextWindow: null };
+  it('F-05 an unsorted series gives the same verdict as a sorted one', () => {
+    const series = days('2026-05-17', [8, 7, 5, ...Array(10).fill(3)], 3);
+    const shuffled = [series[5], series[0], series[12], series[2], series[1], ...series.slice(3, 5), ...series.slice(6, 12)];
+    expect(sowingAdvice(shuffled, inWindow).verdict).toBe('SEMEZ');
+  });
+  it('F-05 a dry spell before the onset does not block sowing', () => {
+    const series = days('2026-05-05', [0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 5, 3, 3, 3], 11);
+    expect(sowingAdvice(series, inWindow).verdict).toBe('SEMEZ');
+  });
+  it('F-05 a day with exactly 1 mm is a rainy day', () => {
+    const series = days('2026-05-17', [10, 10, 5, 1, 1, 1, 1, 1, 1, 1, 3], 3);
+    expect(sowingAdvice(series, inWindow).verdict).toBe('SEMEZ');
+  });
+  it('F-05 the onset window is exactly 3 consecutive observed days', () => {
+    const series = days('2026-05-14', [9, 0, 0, 6, 6, 3, 3, 3], 6);
+    expect(sowingAdvice(series, inWindow).verdict).toBe('ATTENDEZ');
+  });
+  it('F-06 a report exactly 7 days old still counts; a future one does not', () => {
+    const now = d('2026-06-10');
+    const v = (iso: string) => ({ status: 'VALIDATED', createdAt: new Date(iso) });
+    expect(pestClusterReached([v('2026-06-03T00:00:00Z'), v('2026-06-09T00:00:00Z'), v('2026-06-10T00:00:00Z')], 3, now)).toBe(true);
+    expect(pestClusterReached([v('2026-06-02T23:59:59Z'), v('2026-06-09T00:00:00Z'), v('2026-06-10T00:00:00Z')], 3, now)).toBe(false);
+    expect(pestClusterReached([v('2026-06-09T00:00:00Z'), v('2026-06-10T00:00:00Z'), v('2026-06-11T00:00:00Z')], 3, now)).toBe(false);
+  });
+  it('F-07 exactly 5 mm is rain, exactly 85 % humidity is humid', () => {
+    expect(postHarvestAdvice('mais', [{ humidity: 60, rainMm: 5 }]).code).toBe('COUVREZ');
+    expect(postHarvestAdvice('mais', [{ humidity: 60, rainMm: 4.9 }]).code).toBe('SECHAGE_POSSIBLE');
+    expect(postHarvestAdvice('mais', [{ humidity: 85, rainMm: 0 }]).code).toBe('SECHEZ');
+    expect(postHarvestAdvice('mais', [{ humidity: 84.9, rainMm: 0 }]).code).toBe('SECHAGE_POSSIBLE');
+  });
+  it('F-07 messages are never empty', () => {
+    for (const c of ['coton', 'mais']) for (const f of [[], [{ humidity: 90, rainMm: 0 }], [{ humidity: 50, rainMm: 0 }], [{ humidity: 50, rainMm: 9 }]]) {
+      expect(postHarvestAdvice(c, f).message.length).toBeGreaterThan(20);
+    }
+  });
+  it('F-09 one typo is tolerated from 5 characters, an ambiguous name returns nothing', () => {
+    const list = [
+      { normalized: 'alpha', status: 'HOMOLOGATED' as const, name: 'Alpha' },
+      { normalized: 'amta', status: 'HOMOLOGATED' as const, name: 'Amta' },
+      { normalized: 'bravo1', status: 'HOMOLOGATED' as const, name: 'Bravo1' },
+      { normalized: 'bravo2', status: 'NOT_HOMOLOGATED' as const, name: 'Bravo2' },
+    ];
+    expect(matchInput('alphx', list)?.name).toBe('Alpha');
+    expect(matchInput('amtx', list)).toBeNull();
+    expect(matchInput('bravo3', list)).toBeNull();
+    expect(matchInput('bravo', list)).toBeNull();
+    expect(matchInput('xalpha', list)?.name).toBe('Alpha');
+    expect(matchInput('alph', list)).toBeNull();
+  });
+  it('F-01 zero neighbours requested gives none; a radius is inclusive', () => {
+    const c = [{ id: 'a', lat: 9, lon: 2 }, { id: 'b', lat: 9.1, lon: 2 }];
+    expect(neighborIds(c, 'a', 80, 0)).toEqual([]);
+    const km = haversineKm(9, 2, 9.1, 2);
+    expect(neighborIds(c, 'a', km)).toEqual(['b']);
+    expect(haversineKm(9, 2, 9, 3)).toBeGreaterThan(105);
+    expect(haversineKm(9, 2, 9, 3)).toBeLessThan(115);
+    expect(haversineKm(9, 2, 10, 3)).toBeGreaterThan(150);
+  });
+  it('F-11 and F-12 user-facing messages carry their content', () => {
+    expect(checkExport({ id: 'soja', exportBanned: true }, true, null).reason).toMatch(/agrément/);
+    expect(checkExport({ id: 'soja', exportBanned: true }, true, 'A1').reason).toMatch(/agrément/);
+  });
+  it('F-03 a triggered rule has a non-empty period key', () => {
+    const r = evaluateClimateRule({ kind: 'HEAVY_RAIN', threshold: 1, windowDays: 1 }, [{ date: d('2026-06-01'), rainMm: 5, tmaxC: 30, humidity: 70, isForecast: true }]);
+    expect(r.periodKey).toMatch(/^2026-06-01$/);
+  });
+  it('F-12 a zero rate gives a zero tax, not an error', () => {
+    expect(computeTdl(500, 0)).toBe(0);
+  });
+  it('F-03 humidity exactly at the threshold counts as humid', () => {
+    const s = [0, 1, 2].map((i) => ({ date: new Date(d('2026-06-01').getTime() + i * 86400000), rainMm: 0, tmaxC: 30, humidity: 90, isForecast: true }));
+    expect(evaluateClimateRule({ kind: 'DISEASE_HUMIDITY', threshold: 90, windowDays: 3 }, s).triggered).toBe(true);
+  });
+});

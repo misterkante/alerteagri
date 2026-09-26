@@ -270,14 +270,25 @@ model ContentVersion {
   content   Content  @relation(fields: [contentId], references: [id])
 }
 
+// RECORDED: a person read the sheet. SYNTHETIC: a speech model did, and says so on screen.
+enum AudioOrigin {
+  RECORDED
+  SYNTHETIC
+}
+
 model ContentAudio {
-  id        String   @id @default(cuid())
-  contentId String
-  lang      String
-  mime      String
-  bytes     Int
-  data      Bytes
-  createdAt DateTime @default(now())
+  id                String      @id @default(cuid())
+  contentId         String
+  lang              String
+  mime              String
+  bytes             Int
+  data              Bytes
+  origin            AudioOrigin @default(RECORDED)
+  // Text actually read, in the audio's language; required for a synthetic voice.
+  transcript        String?
+  machineTranslated Boolean     @default(false)
+  provider          String?
+  createdAt         DateTime    @default(now())
   content   Content  @relation(fields: [contentId], references: [id])
 
   @@unique([contentId, lang])

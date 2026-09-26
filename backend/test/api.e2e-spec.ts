@@ -10,6 +10,11 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { WeatherService } from '../src/weather/weather.service';
 import { AlertsService } from '../src/alerts/alerts.service';
 import { SMS_PROVIDER } from '../src/alerts/sms.provider';
+import {
+  VOICE_PROVIDER,
+  VoiceProvider,
+  VoiceUnavailableError,
+} from '../src/content/voice.provider';
 import { signReceipt } from '../src/domain/tax';
 
 process.env.RECEIPT_SECRET = 'test-receipt-secret-0123456789';
@@ -17,6 +22,7 @@ process.env.USSD_SECRET = 'test-ussd-secret';
 process.env.DEMO_MODE = 'true';
 process.env.RATE_LIMIT_PER_MIN = '100000';
 process.env.LOGIN_LIMIT_PER_MIN = '12';
+process.env.VOICE_LIMIT_PER_MIN = '8';
 process.env.SEED_STAFF_PIN = '4821';
 
 const uid = () => randomBytes(6).toString('hex');
@@ -562,6 +568,147 @@ describe('AlerteAgri API (e2e, real database)', () => {
         .post(`/reports/${r.id}/validate`)
         .set(as('producer'))
         .expect(403);
+    });
+  });
+
+  describe('F-08 synthetic voice in local languages', () => {
+    const ogg = Buffer.concat([Buffer.from('OggS'), Buffer.alloc(60)]);
+    let voice: VoiceProvider;
+    let saved: Pick<VoiceProvider, 'translate' | 'synthesize'>;
+    beforeAll(() => {
+      voice = app.get(VOICE_PROVIDER);
+      saved = { translate: voice.translate, synthesize: voice.synthesize };
+    });
+    afterEach(() => Object.assign(voice, saved));
+    afterAll(async () => {
+      const ids = (
+        await prisma.content.findMany({ where: { title: 'Voix test' } })
+      ).map((c) => c.id);
+      await prisma.contentAudio.deleteMany({
+        where: { contentId: { in: ids } },
+      });
+      await prisma.auditLog.deleteMany({ where: { entityId: { in: ids } } });
+      await prisma.content.deleteMany({ where: { id: { in: ids } } });
+    });
+    const draftSheet = () =>
+      prisma.content.create({
+        data: {
+          kind: 'FICHE_LUTTE',
+          title: 'Voix test',
+          body: 'Texte de la fiche.',
+          pictogram: 'bug',
+          status: 'PUBLISHED',
+        },
+      });
+
+    it('machine translates, voices and labels the audio; the public list shows it as synthetic', async () => {
+      const said: string[] = [];
+      voice.translate = async () => 'Wema ɖé ɖò fɔn mɛ';
+      voice.synthesize = async (text) => {
+        said.push(text);
+        return ogg;
+      };
+      const c = await draftSheet();
+      const r = await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('agent'))
+        .send({})
+        .expect(201);
+      expect(r.body).toMatchObject({
+        origin: 'SYNTHETIC',
+        machineTranslated: true,
+        transcript: 'Wema ɖé ɖò fɔn mɛ',
+      });
+      expect(said).toStrictEqual(['Wema ɖé ɖò fɔn mɛ']);
+      const listed = (await http().get('/contents').expect(200)).body.find(
+        (x: { id: string }) => x.id === c.id,
+      );
+      expect(listed.audios).toStrictEqual([
+        expect.objectContaining({
+          lang: 'fon',
+          origin: 'SYNTHETIC',
+          machineTranslated: true,
+          provider: '229langues',
+        }),
+      ]);
+      await http().get(`/contents/${c.id}/audio/fon`).expect(200);
+    });
+
+    it('voices a text written by a speaker without translating it', async () => {
+      voice.translate = async () => {
+        throw new Error('must not translate');
+      };
+      voice.synthesize = async () => ogg;
+      const c = await draftSheet();
+      const r = await http()
+        .post(`/cms/contents/${c.id}/voice/yoruba`)
+        .set(as('advisor'))
+        .send({ text: 'Ẹ má ṣe lo oògùn tí a kò fọwọ́ sí' })
+        .expect(201);
+      expect(r.body.machineTranslated).toBe(false);
+    });
+
+    it('never replaces a recording made by a person', async () => {
+      voice.synthesize = async () => ogg;
+      const c = await draftSheet();
+      await http()
+        .post(`/cms/contents/${c.id}/audio/fon`)
+        .set(as('advisor'))
+        .attach('file', ogg, 'fiche.ogg')
+        .expect(201);
+      await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('agent'))
+        .send({ text: 'Wema' })
+        .expect(409);
+    });
+
+    it('a language without a voice, a producer, a provider outage and a non-audio answer are refused', async () => {
+      const c = await draftSheet();
+      await http()
+        .post(`/cms/contents/${c.id}/voice/bariba`)
+        .set(as('agent'))
+        .send({ text: 'Texte' })
+        .expect(400);
+      await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('producer'))
+        .send({ text: 'Texte' })
+        .expect(403);
+      voice.synthesize = async () => {
+        throw new VoiceUnavailableError('Service de voix injoignable');
+      };
+      const down = await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('agent'))
+        .send({ text: 'Texte' })
+        .expect(502);
+      expect(down.body.message).toBe('Service de voix injoignable');
+      voice.synthesize = async () => Buffer.from('<html>quota exceeded</html>');
+      await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('agent'))
+        .send({ text: 'Texte' })
+        .expect(502);
+      expect(
+        await prisma.contentAudio.count({ where: { contentId: c.id } }),
+      ).toBe(0);
+    });
+
+    it('stays under the provider quota: a burst of generations is cut off', async () => {
+      voice.synthesize = async () => ogg;
+      const c = await draftSheet();
+      const statuses: number[] = [];
+      for (let i = 0; i < 10; i++)
+        statuses.push(
+          (
+            await http()
+              .post(`/cms/contents/${c.id}/voice/fon`)
+              .set(as('agent'))
+              .send({ text: 'Texte' })
+          ).status,
+        );
+      expect(statuses).toContain(429);
     });
   });
 

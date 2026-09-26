@@ -2,6 +2,9 @@ export const LANGS = ['fon', 'yoruba', 'bariba', 'dendi', 'francais'];
 
 export const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
 
+// Longest text a speech model reads in one call.
+export const MAX_VOICE_CHARS = 1000;
+
 export const PICTOGRAMS = [
   'bug',
   'sun',

@@ -1,5 +1,8 @@
 import {
+  BadGatewayException,
   BadRequestException,
+  ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,9 +13,30 @@ import { AuditService } from '../common/audit.service';
 import { toWebVtt } from '../domain/captions';
 import { matchInput, normalizeName } from '../domain/inputs';
 import { InputDto } from './dto/input.dto';
-import { LANGS, sniffAudio } from './content.constants';
+import {
+  LANGS,
+  MAX_AUDIO_BYTES,
+  MAX_VOICE_CHARS,
+  sniffAudio,
+} from './content.constants';
+import { VoiceDto } from './dto/voice.dto';
+import {
+  VOICE_PROVIDER,
+  VoiceProvider,
+  VoiceUnavailableError,
+} from './voice.provider';
 import { UploadedAudio } from './content.types';
 import { ContentDto } from './dto/content.dto';
+
+// What a list shows about an audio: never the sound itself, always whether a person or a model speaks.
+const AUDIO_FIELDS = {
+  lang: true,
+  bytes: true,
+  origin: true,
+  transcript: true,
+  machineTranslated: true,
+  provider: true,
+} as const;
 
 @Injectable()
 export class ContentService {
@@ -20,6 +44,7 @@ export class ContentService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly alerts: AlertsService,
+    @Inject(VOICE_PROVIDER) private readonly voice: VoiceProvider,
   ) {}
 
   published(kind?: ContentKind) {
@@ -34,7 +59,7 @@ export class ContentService {
         officialRef: true,
         version: true,
         updatedAt: true,
-        audios: { select: { lang: true, bytes: true } },
+        audios: { select: AUDIO_FIELDS },
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -43,7 +68,7 @@ export class ContentService {
   all() {
     return this.prisma.content.findMany({
       include: {
-        audios: { select: { lang: true, bytes: true } },
+        audios: { select: AUDIO_FIELDS },
         versions: {
           select: { version: true, createdAt: true, authorId: true },
         },
@@ -136,7 +161,16 @@ export class ContentService {
       throw new BadRequestException(
         'Le fichier n’est pas un audio reconnu (ogg, mp3, wav, webm, m4a)',
       );
-    const data = { mime, bytes: file.size, data: file.buffer };
+    // A person's recording replaces any synthetic voice for this language.
+    const data = {
+      mime,
+      bytes: file.size,
+      data: file.buffer,
+      origin: 'RECORDED' as const,
+      transcript: null,
+      machineTranslated: false,
+      provider: null,
+    };
     await this.prisma.contentAudio.upsert({
       where: { contentId_lang: { contentId: id, lang } },
       update: data,
@@ -203,5 +237,85 @@ export class ContentService {
       status: dto.status,
     });
     return p;
+  }
+
+  voices() {
+    const env = process.env;
+    return {
+      provider: this.voice.name,
+      voices: this.voice.voices,
+      configured: !!env.LANGUES229_API_KEY && !!env.LANGUES229_BEARER,
+    };
+  }
+
+  // A synthetic voice for a sheet nobody has recorded yet in this language; labelled as such on screen.
+  async generateVoice(
+    authorId: string,
+    id: string,
+    lang: string,
+    dto: VoiceDto,
+  ) {
+    if (!this.voice.voices.includes(lang))
+      throw new BadRequestException(
+        `Voix de synthèse disponible en : ${this.voice.voices.join(', ')}`,
+      );
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content) throw new NotFoundException('Fiche introuvable');
+    const existing = await this.prisma.contentAudio.findUnique({
+      where: { contentId_lang: { contentId: id, lang } },
+    });
+    if (existing?.origin === 'RECORDED')
+      throw new ConflictException(
+        'Un enregistrement fait par une personne existe déjà dans cette langue',
+      );
+    let transcript = dto.text?.trim();
+    const machineTranslated = !transcript;
+    let audio: Buffer;
+    try {
+      transcript ??= await this.voice.translate(
+        `${content.title}. ${content.body}`,
+        lang,
+      );
+      if (transcript.length > MAX_VOICE_CHARS)
+        throw new BadRequestException(
+          `Texte trop long pour la voix (${MAX_VOICE_CHARS} caractères au plus)`,
+        );
+      audio = await this.voice.synthesize(transcript, lang);
+    } catch (e) {
+      if (e instanceof VoiceUnavailableError)
+        throw new BadGatewayException(e.message);
+      throw e;
+    }
+    const mime = sniffAudio(audio);
+    if (!mime || audio.length > MAX_AUDIO_BYTES)
+      throw new BadGatewayException('Réponse du service de voix inutilisable');
+    const data = {
+      mime,
+      bytes: audio.length,
+      data: audio,
+      origin: 'SYNTHETIC' as const,
+      transcript,
+      machineTranslated,
+      provider: this.voice.name,
+    };
+    await this.prisma.contentAudio.upsert({
+      where: { contentId_lang: { contentId: id, lang } },
+      update: data,
+      create: { contentId: id, lang, ...data },
+    });
+    await this.audit.log(authorId, 'content.voice', 'Content', id, {
+      lang,
+      bytes: audio.length,
+      machineTranslated,
+      provider: this.voice.name,
+    });
+    return {
+      lang,
+      mime,
+      bytes: audio.length,
+      origin: 'SYNTHETIC',
+      transcript,
+      machineTranslated,
+    };
   }
 }

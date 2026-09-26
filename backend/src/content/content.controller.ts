@@ -15,6 +15,7 @@ import {
   MaxFileSizeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ContentKind } from '@prisma/client';
 import type { Response } from 'express';
@@ -28,6 +29,9 @@ import { UploadedAudio } from './content.types';
 import { MAX_AUDIO_BYTES } from './content.constants';
 import { ContentDto } from './dto/content.dto';
 import { ContentService } from './content.service';
+import { VoiceDto } from './dto/voice.dto';
+
+const VOICE_LIMIT = () => Number(process.env.VOICE_LIMIT_PER_MIN ?? 4);
 
 @ApiTags('contenus')
 @Controller()
@@ -134,6 +138,29 @@ export class ContentController {
     file: UploadedAudio,
   ) {
     return this.content.attachAudio(user.userId, id, lang, file);
+  }
+
+  @Get('cms/voices')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('AGENT', 'ADMIN', 'ADVISOR')
+  voices() {
+    return this.content.voices();
+  }
+
+  // The speech provider accepts 5 requests a minute; this route stays under it by default.
+  @Post('cms/contents/:id/voice/:lang')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('AGENT', 'ADMIN', 'ADVISOR')
+  @Throttle({ default: { limit: VOICE_LIMIT, ttl: 60_000 } })
+  voice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('lang') lang: string,
+    @Body() dto: VoiceDto,
+  ) {
+    return this.content.generateVoice(user.userId, id, lang, dto);
   }
 
   @Post('cms/inputs')

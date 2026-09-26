@@ -28,6 +28,12 @@ Sources et niveaux de preuve : [`docs/JUSTIFICATION_RECHERCHE.md`](docs/JUSTIFIC
 | Agent ATDA | Valide les signalements, voit la carte des 77 communes, la boucle de chaque alerte (envoyés, lus, actions, délais), la valeur protégée et l'offre déclarée face aux capacités de la GDIZ | tableau de bord |
 | Commune | Barème et encaissement de la taxe de développement local, reçu QR vérifiable par tous, recettes | application |
 | Acheteur, exportateur | Lot traçable de la parcelle au centre de collecte, avec un QR code (prêt pour le règlement européen anti-déforestation) | page publique |
+| Producteur, conseiller | Suivi de parcelle : étapes de culture datées, rappels par SMS, stress hydrique (pluie moins évapotranspiration depuis le semis) | application, SMS |
+| Producteur | Photo jointe au signalement, réduite sur le téléphone avant l'envoi | application |
+| Producteur | Nouvelle règle publiée : SMS aux producteurs des cultures concernées, une seule fois | SMS |
+| Coopérative, conseiller | Vente groupée : une offre, chaque part au nom de son producteur | application |
+| Agent ATDA | Règles d'alerte et calendriers de semis modifiables, export FAMEWS pour la FAO, envoi des lots au marché terminal SIPI (adaptateur simulé), indice de sécheresse pour une assurance indicielle (simulation) | tableau de bord |
+| Commune | Rapprochement des recettes : chaque reçu revérifié par sa signature, export CSV pour le receveur | application |
 
 Le monitoring fonctionne de bout en bout : relevé météo réel (Open-Meteo, 77 communes, 30 jours passés et 16 jours de prévision), règles paramétrables, alerte, SMS, accusé de lecture, action déclarée, clôture et délais mesurés.
 
@@ -88,4 +94,4 @@ Déploiement : l'API et sa base sur Render (`render.yaml`), l'interface sur Verc
 
 ## Stack
 
-NestJS 11, Prisma, PostgreSQL, React 18, Vite, Tailwind, PWA (Workbox). Sécurité : helmet, CORS restreint, limitation de débit, validation stricte des entrées, rôles vérifiés côté serveur, journal d'audit, reçus signés par HMAC, fichiers audio validés par leur contenu.
+NestJS 11, Prisma, PostgreSQL (Supabase), React 18, Vite, Tailwind, PWA (Workbox), thème clair et sombre. Sécurité : helmet, CORS restreint, limitation de débit, validation stricte des entrées, rôles vérifiés côté serveur, journal d'audit, reçus signés par HMAC, fichiers audio validés par leur contenu.

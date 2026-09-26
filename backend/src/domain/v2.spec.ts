@@ -76,3 +76,44 @@ describe('F-16 image sniffing', () => {
     expect(sniffImage(Buffer.from([0xff, 0xd8]))).toBeNull();
   });
 });
+
+import { CROP_CYCLES } from './season';
+import { neighborIds } from './geo';
+
+describe('mutation survivors V2', () => {
+  it('F-17 every crop cycle has four ordered steps, non-empty labels, harvest at the end of the cycle', () => {
+    const sown = d('2026-05-01');
+    expect(Object.keys(CROP_CYCLES).sort()).toEqual(['arachide', 'coton', 'mais', 'manioc', 'niebe', 'riz', 'soja', 'sorgho', 'tomate']);
+    for (const [crop, cycle] of Object.entries(CROP_CYCLES)) {
+      const steps = cropSteps(crop, sown);
+      expect(steps.map((s) => s.code)).toEqual(['levee', 'sarclage', 'fertilisation', 'recolte']);
+      steps.forEach((s) => expect(s.label.length).toBeGreaterThan(8));
+      for (let i = 1; i < steps.length; i++) expect(steps[i].due.getTime()).toBeGreaterThan(steps[i - 1].due.getTime());
+      expect((steps[3].due.getTime() - sown.getTime()) / 86400000).toBe(cycle.days);
+      expect(cycle.days).toBeGreaterThanOrEqual(60);
+      expect(steps[0].due.getTime()).toBeGreaterThan(sown.getTime());
+    }
+  });
+  it('F-17 documented cycle lengths (indicative, KI-018)', () => {
+    expect(Object.fromEntries(Object.entries(CROP_CYCLES).map(([k, v]) => [k, v.days]))).toEqual({
+      mais: 100, sorgho: 110, riz: 120, soja: 110, arachide: 100, niebe: 75, coton: 150, manioc: 300, tomate: 90,
+    });
+  });
+  it('F-16 partial or shifted magic bytes are not images', () => {
+    const pad = (b: number[]) => Buffer.from([...b, ...Array(12).fill(0)]);
+    expect(sniffImage(pad([0xff, 0xd8, 0x00]))).toBeNull();
+    expect(sniffImage(pad([0x00, 0xd8, 0xff]))).toBeNull();
+    expect(sniffImage(pad([0xff, 0x00, 0xff]))).toBeNull();
+    expect(sniffImage(Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP')]))).toBe('image/webp');
+    expect(sniffImage(Buffer.concat([Buffer.from('RIFX'), Buffer.alloc(4), Buffer.from('WEBP')]))).toBeNull();
+    expect(sniffImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0b, 0, 0, 0, 0]))).toBeNull();
+    expect(sniffImage(Buffer.alloc(11, 0xff))).toBeNull();
+  });
+  it('F-21 the CSV ends with a newline and has no trailing separator', () => {
+    const csv = famewsCsv([]);
+    expect(csv).toBe('date,country,admin1,admin2,latitude,longitude,crop,pest,observation\n');
+  });
+  it('F-01 an unknown commune has no neighbours', () => {
+    expect(neighborIds([{ id: 'a', lat: 9, lon: 2 }], 'zzz', 80, 5)).toEqual([]);
+  });
+});

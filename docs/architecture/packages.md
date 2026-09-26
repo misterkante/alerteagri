@@ -4,7 +4,7 @@ Backend NestJS, un module par domaine sous `backend/src`. Les règles métier so
 
 | Package | Chemin | Responsabilité | Dépend de |
 |---|---|---|---|
-| domain | backend/src/domain | règles pures : semis, climat, foyers de ravageurs, post-récolte, intrants, export, TDL, valeur, géographie | aucun |
+| domain | backend/src/domain | règles pures : semis, climat, foyers de ravageurs, post-récolte, intrants, export, TDL, valeur, géographie, étapes de culture, bilan hydrique, sécheresse, formats d'export | aucun |
 | prisma | backend/src/prisma | accès à PostgreSQL | aucun |
 | auth | backend/src/auth | inscription (producteur, acheteur), connexion téléphone et PIN, JWT | prisma |
 | common | backend/src/common | gardes de rôles, journal d'audit, action d'un conseiller au nom d'un producteur | prisma |
@@ -18,8 +18,9 @@ Backend NestJS, un module par domaine sous `backend/src`. Les règles métier so
 | ussd | backend/src/ussd | menu USSD (passerelle et téléphone de démonstration) | advice, reports, content, alerts |
 | market | backend/src/market | connecteur marché ouvert, blocage des exports, réservations | domain, common |
 | tax | backend/src/tax | taxe de développement local, reçus signés, recettes | domain, common |
-| trace | backend/src/trace | parcelles, lots, page publique du lot | domain, common |
-| dashboard | backend/src/dashboard | carte, valeur protégée, offre face à la GDIZ | domain, prisma |
+| trace | backend/src/trace | parcelles, étapes et rappels de culture, bilan hydrique, lots, page publique du lot | domain, common, alerts |
+| dashboard | backend/src/dashboard | carte, valeur protégée, offre face à la GDIZ, indice de sécheresse | domain, prisma |
+| integrations | backend/src/integrations | export FAMEWS, connecteur du marché terminal SIPI (adaptateur remplaçable) | domain, common |
 
 ```mermaid
 flowchart LR
@@ -30,6 +31,8 @@ flowchart LR
   alerts & reports & users & content & market & tax & trace --> common
   weather --> prisma
   common --> prisma
+  integrations --> domain & common
+  trace --> alerts
 ```
 
 Frontend React (`frontend/src`) : `api.js` (client et file d'attente hors ligne), `ui.jsx` (composants, lecture vocale, QR), `pages/farmer.jsx`, `pages/market.jsx`, `pages/staff.jsx`.

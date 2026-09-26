@@ -143,6 +143,19 @@ async function main() {
       await prisma.referencePrice.create({ data: { cropId, communeId, pricePerKg, observedAt, source: 'Valeur de démonstration (à remplacer par le bulletin du SIM agricole)' } });
     }
   }
+  if ((await prisma.parcel.count()) === 0) {
+    const byPhone = async (phone: string) => (await prisma.user.findUniqueOrThrow({ where: { phone } })).id;
+    const demoParcels: [string, string, string, number, number, number][] = [
+      ['+22997000001', 'parakou', 'mais', 2.5, 9.352, 2.611], ['+22997000001', 'parakou', 'soja', 2, 9.341, 2.655],
+      ['+22997000002', 'n-dali', 'mais', 3, 9.871, 2.705], ['+22997000003', 'tchaourou', 'soja', 4, 8.893, 2.61],
+      ['+22997000003', 'tchaourou', 'anacarde', 5, 8.9, 2.585], ['+22997000004', 'bohicon', 'mais', 1.5, 7.18, 2.07],
+    ];
+    for (const [phone, communeId, cropId, areaHa, lat, lon] of demoParcels) {
+      await prisma.parcel.create({ data: { ownerId: await byPhone(phone), communeId, cropId, areaHa, lat, lon } });
+    }
+    const soja = await prisma.parcel.findFirstOrThrow({ where: { communeId: 'tchaourou', cropId: 'soja' } });
+    await prisma.lot.create({ data: { code: 'LOT-DEMO0001', parcelId: soja.id, harvestDate: new Date('2026-09-15T00:00:00Z'), weightKg: 3200, humidityPct: 11.5 } });
+  }
   // eslint-disable-next-line no-console
   console.log(`Seed: ${await prisma.commune.count()} communes, ${await prisma.crop.count()} cultures, ${await prisma.user.count()} comptes`);
 }

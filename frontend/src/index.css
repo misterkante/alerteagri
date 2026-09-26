@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .page { @apply mx-auto w-full max-w-3xl px-4 pb-24 pt-4 text-soil; }
+  .card { @apply rounded-lg border border-soil-line bg-white p-4; }
+  .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40 disabled:opacity-50; }
+  .btn-primary { @apply btn bg-leaf text-white hover:bg-leaf-mid; }
+  .btn-ghost { @apply btn border border-soil-line bg-white text-soil hover:bg-soil-light; }
+  .input { @apply min-h-12 w-full rounded-lg border border-soil-line bg-white px-3 text-base focus:outline-none focus:ring-4 focus:ring-leaf/30; }
+  .label { @apply mb-1 block text-sm font-semibold; }
+  .tile { @apply flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-soil-line bg-white p-3 text-center text-base font-bold hover:border-leaf focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40; }
+  .badge { @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold; }
+  .demo { @apply badge bg-warn-light text-warn; }
+}

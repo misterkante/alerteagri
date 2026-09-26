@@ -223,13 +223,149 @@ export function Login() {
         </button>
         <ErrorNote error={error} />
       </form>
-      <div className="mt-8 rounded-2xl bg-surface-raised p-4 text-[14px]">
+      <section className="card mt-8" aria-labelledby="sans-compte">
+        <h2 id="sans-compte" className="text-[17px] font-semibold">
+          Pas encore de compte ?
+        </h2>
+        <p className="mt-1 text-[14px] text-soil-muted">
+          Créez-le en une minute avec votre numéro. Sans smartphone, votre conseiller ATDA vous inscrit.
+        </p>
+        <Link to="/inscription" className="btn-ghost mt-3 w-full">
+          Créer mon compte
+        </Link>
+        <p className="mt-3 text-[13px] text-soil-muted">
+          Sans compte, vous pouvez déjà{' '}
+          <Link className="font-semibold text-leaf underline" to="/semis">
+            savoir quand semer
+          </Link>{' '}
+          et{' '}
+          <Link className="font-semibold text-leaf underline" to="/pesticide">
+            vérifier un pesticide
+          </Link>
+          .
+        </p>
+      </section>
+      <div className="mt-6 rounded-2xl bg-surface-raised p-4 text-[14px]">
         <p className="font-semibold">
           Comptes de démonstration <Demo />
         </p>
         <p className="mt-1">Producteurs : 01 97 00 00 01 (Parakou), 01 97 00 00 04 (Bohicon) · Acheteur : 01 96 00 00 01 · PIN 1234.</p>
         <p className="mt-1 text-soil-muted">Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
       </div>
+    </Shell>
+  );
+}
+
+// Self sign-up for producers and buyers; staff accounts are created by the administration.
+export function Signup() {
+  const [, setSession] = useSession();
+  const { communes, communeId, setCommuneId } = useCommune();
+  const [role, setRole] = useState('PRODUCER');
+  const [form, setForm] = useState({ name: '', phone: '', pin: '', pin2: '' });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (form.pin !== form.pin2) {
+      setError('Les deux codes PIN ne sont pas identiques.');
+      return;
+    }
+    try {
+      const s = await api('/auth/register', {
+        method: 'POST',
+        body: { role, name: form.name, phone: form.phone, pin: form.pin, communeId },
+        auth: false,
+      });
+      setSession(s);
+      navigate(HOME_BY_ROLE[s.user.role] ?? '/');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const field = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) });
+  return (
+    <Shell title="Créer mon compte">
+      <form className="space-y-5" onSubmit={submit} method="post">
+        <TileRadioGroup
+          label="Vous êtes"
+          options={[
+            { id: 'PRODUCER', name: 'Je produis', picto: 'semis' },
+            { id: 'BUYER', name: 'J’achète', picto: 'marche' },
+          ]}
+          value={role}
+          onChange={setRole}
+          className="grid grid-cols-2 gap-3"
+        />
+        <div>
+          <label className="label" htmlFor="su-name">
+            {role === 'BUYER' ? 'Votre nom ou celui de la coopérative' : 'Votre nom'}
+          </label>
+          <input id="su-name" className="input" autoComplete="name" required minLength={2} maxLength={80} {...field('name')} />
+        </div>
+        <div>
+          <label className="label" htmlFor="su-phone">
+            Numéro de téléphone
+          </label>
+          <input
+            id="su-phone"
+            className="input text-[18px] tracking-wide"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="01 97 00 00 01"
+            required
+            {...field('phone')}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="su-commune">
+            Votre commune
+          </label>
+          <CommuneSelect communes={communes} value={communeId} onChange={setCommuneId} id="su-commune" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label" htmlFor="su-pin">
+              Code PIN (4 chiffres)
+            </label>
+            <input
+              id="su-pin"
+              className="input text-center font-display text-[22px] tracking-[0.5em]"
+              inputMode="numeric"
+              type="password"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              required
+              {...field('pin')}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="su-pin2">
+              Répétez le code
+            </label>
+            <input
+              id="su-pin2"
+              className="input text-center font-display text-[22px] tracking-[0.5em]"
+              inputMode="numeric"
+              type="password"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              required
+              {...field('pin2')}
+            />
+          </div>
+        </div>
+        <button className="btn-primary w-full" type="submit">
+          Créer mon compte
+        </button>
+        <ErrorNote error={error} />
+        <p className="text-center text-[14px]">
+          Déjà inscrit ?{' '}
+          <Link className="font-semibold text-leaf underline" to="/connexion">
+            Se connecter
+          </Link>
+        </p>
+      </form>
     </Shell>
   );
 }
@@ -379,15 +515,16 @@ function AdvisorPanel() {
   );
 }
 
-function CommuneSelect({ communes, value, onChange }) {
+function CommuneSelect({ communes, value, onChange, id }) {
   return (
     <div className="relative">
       <MapPin className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-leaf" aria-hidden="true" />
       <select
+        id={id}
         className="input appearance-none pl-11 pr-10 font-semibold"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        aria-label="Commune"
+        aria-label={id ? undefined : 'Commune'}
       >
         {communes.map((c) => (
           <option key={c.id} value={c.id}>

@@ -228,3 +228,29 @@ test.describe('F-17 from advice to reminders', () => {
     await expect(page.getByText(/^Niébé · 1,5 ha$/).first()).toBeVisible();
   });
 });
+
+test.describe('Onboarding without an advisor', () => {
+  test('a buyer creates an account with a 10-digit number and lands on the market', async ({ page }) => {
+    const n = String(Math.floor(1e7 + Math.random() * 8.9e7));
+    await page.goto('/connexion');
+    await page.getByRole('link', { name: 'Créer mon compte' }).click();
+    await page.getByRole('radiogroup', { name: 'Vous êtes' }).getByRole('radio', { name: 'J’achète' }).click();
+    await page.getByLabel('Votre nom ou celui de la coopérative').fill('Coopérative Test');
+    await page.getByLabel('Numéro de téléphone').fill(`01 ${n.slice(0, 2)} ${n.slice(2, 4)} ${n.slice(4, 6)} ${n.slice(6)}`);
+    await page.getByLabel('Votre commune').selectOption({ label: 'Bohicon (Zou)' });
+    await page.getByLabel('Code PIN (4 chiffres)').fill('4821');
+    await page.getByLabel('Répétez le code').fill('4821');
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
+    await expect(page).toHaveURL(/\/marche$/);
+  });
+
+  test('two different PINs are caught before anything is sent', async ({ page }) => {
+    await page.goto('/inscription');
+    await page.getByLabel('Votre nom').fill('Test');
+    await page.getByLabel('Numéro de téléphone').fill('01 90 00 00 99');
+    await page.getByLabel('Code PIN (4 chiffres)').fill('1111');
+    await page.getByLabel('Répétez le code').fill('2222');
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
+    await expect(page.getByRole('alert')).toContainText('pas identiques');
+  });
+});

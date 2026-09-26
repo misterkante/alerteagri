@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Alerts, Harvest, Home, Login, Pesticide, ProducerHome, Report, Sheets, Sowing } from './pages/farmer';
+import { Alerts, Harvest, Home, Login, Pesticide, ProducerHome, Report, Sheets, Signup, Sowing } from './pages/farmer';
 import { LotPage, Market, ReceiptCheck, UssdPhone } from './pages/market';
 import { Cms, Commune, Dashboard } from './pages/staff';
 import { Parcels } from './pages/advisor';
@@ -10,6 +10,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/connexion" element={<Login />} />
+        <Route path="/inscription" element={<Signup />} />
         <Route path="/producteur" element={<ProducerHome />} />
         <Route path="/semis" element={<Sowing />} />
         <Route path="/signaler" element={<Report />} />

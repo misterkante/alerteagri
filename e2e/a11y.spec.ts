@@ -7,6 +7,7 @@ import { STATE_DIR, type Role } from './global-setup';
 const PAGES: { path: string; role?: Role; ready: RegExp }[] = [
   { path: '/', ready: /AlerteAgri/ },
   { path: '/connexion', ready: /Connexion/ },
+  { path: '/inscription', ready: /Créer mon compte/ },
   { path: '/semis', ready: /semis/i },
   { path: '/pesticide', ready: /pesticide|produit/i },
   { path: '/fiches', ready: /fiche/i },

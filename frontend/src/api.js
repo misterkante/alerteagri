@@ -3,14 +3,25 @@ const SESSION = 'alerteagri:session';
 const QUEUE = 'alerteagri:queue';
 
 export function getSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION) ?? 'null'); } catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(SESSION) ?? 'null');
+  } catch {
+    return null;
+  }
 }
 export function setSession(s) {
-  try { s ? localStorage.setItem(SESSION, JSON.stringify(s)) : localStorage.removeItem(SESSION); } catch { /* storage unavailable */ }
+  try {
+    s ? localStorage.setItem(SESSION, JSON.stringify(s)) : localStorage.removeItem(SESSION);
+  } catch {
+    /* storage unavailable */
+  }
 }
 
 export class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
 }
 
 export async function api(path, { method = 'GET', body, form, auth = true } = {}) {
@@ -20,10 +31,18 @@ export async function api(path, { method = 'GET', body, form, auth = true } = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await fetch(`${API_URL}${path}`, { method, headers, body: form ?? (body !== undefined ? JSON.stringify(body) : undefined) });
   const text = await res.text();
-  const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
+  const data = text
+    ? (() => {
+        try {
+          return JSON.parse(text);
+        } catch {
+          return text;
+        }
+      })()
+    : null;
   if (!res.ok) {
     if (res.status === 401 && auth) setSession(null);
-    const msg = Array.isArray(data?.message) ? data.message.join(' ; ') : data?.message ?? `Erreur ${res.status}`;
+    const msg = Array.isArray(data?.message) ? data.message.join(' ; ') : (data?.message ?? `Erreur ${res.status}`);
     throw new ApiError(res.status, msg);
   }
   return data;
@@ -33,10 +52,18 @@ export const newClientId = () => (crypto.randomUUID ? crypto.randomUUID() : `${D
 
 // Offline queue: writes made without network are replayed later with the same clientId, so they are never duplicated.
 function readQueue() {
-  try { return JSON.parse(localStorage.getItem(QUEUE) ?? '[]'); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(QUEUE) ?? '[]');
+  } catch {
+    return [];
+  }
 }
 function writeQueue(q) {
-  try { localStorage.setItem(QUEUE, JSON.stringify(q)); } catch { /* storage unavailable */ }
+  try {
+    localStorage.setItem(QUEUE, JSON.stringify(q));
+  } catch {
+    /* storage unavailable */
+  }
 }
 export const queueSize = () => readQueue().length;
 
@@ -54,7 +81,11 @@ export async function flushQueue() {
   const q = readQueue();
   const left = [];
   for (const item of q) {
-    try { await api(item.path, { method: 'POST', body: item.body }); } catch (e) { if (!(e instanceof ApiError)) left.push(item); }
+    try {
+      await api(item.path, { method: 'POST', body: item.body });
+    } catch (e) {
+      if (!(e instanceof ApiError)) left.push(item);
+    }
   }
   writeQueue(left);
   return q.length - left.length;

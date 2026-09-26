@@ -5,3 +5,5 @@ coverage
 .claude
 reports
 .stryker-tmp
+.vercel
+.env*

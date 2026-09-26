@@ -2,7 +2,7 @@
 
 Avant de commencer, 5 minutes avant la démo :
 
-1. Ouvrez l'API une fois pour la réveiller (hébergement gratuit) : `<API>/health`.
+1. Ouvrez l'API une fois pour la réveiller (hébergement gratuit) : https://alerteagri.onrender.com/health (30 à 60 secondes au premier appel). L'application : https://alerteagri.vercel.app
 2. Connectez-vous en agent (+22990000002) et cliquez sur **Relever la météo**, puis **Appliquer les règles**.
 3. Ouvrez deux onglets : le producteur (+22997000001, PIN 1234) et l'agent.
 

@@ -2,6 +2,8 @@
 
 **Voir venir, agir à temps.** Une plateforme de soutien à la production agricole au Bénin, utilisable par un producteur qui ne sait pas lire, qui n'a pas de smartphone ou qui n'a pas de réseau.
 
+**En ligne** : application https://alerteagri.vercel.app · API et documentation https://alerteagri.onrender.com/docs
+
 ## Le problème
 
 - L'agriculture fait 25,4 % du PIB et 59,1 % des recettes d'exportation du Bénin (2025), et emploie près de 70 % des actifs.

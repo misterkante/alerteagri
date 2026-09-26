@@ -1,26 +1,30 @@
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+export function configure(app: INestApplication): INestApplication {
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim());
+  app.enableCors({ origin: origins, credentials: false });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  return app;
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  app.enableCors();
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-
+  const app = configure(await NestFactory.create(AppModule));
   const config = new DocumentBuilder()
     .setTitle('AlerteAgri API')
-    .setDescription('Marketplace agricole Nord-Benin — offres, prix par zone, commandes, paiement Mobile Money, USSD')
-    .setVersion('0.1.0')
+    .setDescription('Monitoring, alerte précoce, conseil, réglementation, recettes locales et traçabilité pour les acteurs agricoles du Bénin. Les routes « marché » forment une API ouverte pour les places de marché tierces.')
+    .setVersion('1.0.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
-
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`AlerteAgri API sur http://localhost:${port} (docs: /docs)`);
 }
-bootstrap();
+
+if (require.main === module) void bootstrap();

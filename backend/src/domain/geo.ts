@@ -1,5 +1,8 @@
 export type Zone = 'NORD' | 'SUD';
 
+export const NEIGHBOR_KM = 80;
+export const MAX_NEIGHBORS = 5;
+
 const EARTH_KM = 6371;
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -10,11 +13,17 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return 2 * EARTH_KM * Math.asin(Math.sqrt(a));
 }
 
-export function neighborIds(communes: { id: string; lat: number; lon: number }[], id: string, km: number): string[] {
+// Communes differ a lot in size (small in the south, very large in the Borgou), so the radius is capped
+// by a count: the nearest communes within the radius, closest first.
+export function neighborIds(communes: { id: string; lat: number; lon: number }[], id: string, km: number, max = Infinity): string[] {
   const origin = communes.find((c) => c.id === id);
-  if (!origin || km <= 0) return [];
+  if (!origin || km <= 0 || max <= 0) return [];
   return communes
-    .filter((c) => c.id !== id && haversineKm(origin.lat, origin.lon, c.lat, c.lon) <= km)
+    .filter((c) => c.id !== id)
+    .map((c) => ({ id: c.id, d: haversineKm(origin.lat, origin.lon, c.lat, c.lon) }))
+    .filter((c) => c.d <= km)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, max)
     .map((c) => c.id);
 }
 

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,13 +21,16 @@ export class AuthService {
       throw new ConflictException('Ce numero est deja enregistre');
     }
 
+    if (!(await this.prisma.commune.findUnique({ where: { id: dto.communeId } }))) {
+      throw new BadRequestException('Commune inconnue');
+    }
     const pinHash = await bcrypt.hash(dto.pin, PIN_SALT_ROUNDS);
     const user = await this.prisma.user.create({
       data: {
         phone: dto.phone,
         name: dto.name,
         role: dto.role,
-        commune: dto.commune,
+        communeId: dto.communeId,
         pinHash,
       },
     });
@@ -49,7 +52,7 @@ export class AuthService {
     return this.buildSession(user);
   }
 
-  private buildSession(user: { id: string; phone: string; role: any; name: string; commune: string }) {
+  private buildSession(user: { id: string; phone: string; role: any; name: string; communeId: string }) {
     const payload: JwtPayload = { sub: user.id, phone: user.phone, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),
@@ -58,7 +61,7 @@ export class AuthService {
         phone: user.phone,
         name: user.name,
         role: user.role,
-        commune: user.commune,
+        communeId: user.communeId,
       },
     };
   }

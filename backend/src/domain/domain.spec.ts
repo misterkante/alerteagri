@@ -30,6 +30,14 @@ describe('geo (F-01, Q-01)', () => {
     expect(neighborIds(communes, 'a', 40)).toEqual(['b']);
     expect(neighborIds(communes, 'a', 0)).toEqual([]);
   });
+  it('neighbors are capped to the nearest ones, closest first', () => {
+    const communes = [{ id: 'o', lat: 9, lon: 2 }, ...[5, 1, 4, 2, 3, 6].map((k) => ({ id: `n${k}`, lat: 9 + k * 0.05, lon: 2 }))];
+    expect(neighborIds(communes, 'o', 80, 3)).toEqual(['n1', 'n2', 'n3']);
+  });
+  it('Parakou reaches Tchaourou and N’Dali with the production setting', () => {
+    const real = [{ id: 'parakou', lat: 9.3372, lon: 2.6303 }, { id: 'tchaourou', lat: 8.8865, lon: 2.5975 }, { id: 'n-dali', lat: 9.8636, lon: 2.7209 }, { id: 'nikki', lat: 9.9401, lon: 3.2107 }];
+    expect(neighborIds(real, 'parakou', 80, 5)).toEqual(['tchaourou', 'n-dali']);
+  });
   it('zone is NORD from 8.5 degrees of latitude', () => {
     expect(zoneForLat(8.5)).toBe('NORD');
     expect(zoneForLat(8.49)).toBe('SUD');

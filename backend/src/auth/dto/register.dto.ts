@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { IsEnum, IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsString, Length, Matches } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: '+22997000000' })
@@ -14,13 +14,13 @@ export class RegisterDto {
   name: string;
 
   @ApiProperty({ enum: [Role.PRODUCER, Role.BUYER] })
-  @IsEnum(Role, { message: 'Le role doit etre PRODUCER ou BUYER' })
+  @IsIn([Role.PRODUCER, Role.BUYER], { message: 'Le rôle doit être PRODUCER ou BUYER' })
   role: Role;
 
-  @ApiProperty({ example: 'Parakou' })
+  @ApiProperty({ example: 'parakou' })
   @IsString()
   @Length(2, 60)
-  commune: string;
+  communeId: string;
 
   @ApiProperty({ example: '1234', description: 'Code PIN a 4 chiffres' })
   @IsString()

@@ -32,7 +32,7 @@ Chaque question a une réponse par défaut. Sans avis contraire, c'est elle qui 
 
 | Id | Question | Défaut proposé |
 |---|---|---|
-| Q-01 | Communes « voisines » : l'adjacence administrative réelle n'est pas disponible en source ouverte fiable | communes dont le centre est à moins de 40 km |
+| Q-01 | Communes « voisines » : l'adjacence administrative réelle n'est pas disponible en source ouverte fiable | les 5 communes les plus proches dans un rayon de 80 km (décision révisée le 2026-09-26 : 40 km n'atteignait aucune voisine au Nord, où Tchaourou est à 50 km et N'Dali à 59 km de Parakou) |
 | Q-02 | Connexion pour le MVP | téléphone + PIN ; code à usage unique par SMS en V2 |
 | Q-03 | SMS, USSD et paiement réels | USSD par un téléphone simulé dans l'application, qui appelle le vrai contrôleur USSD (protocole standard session/texte, réponses CON/END, compatible agrégateur) ; SMS dans une boîte d'envoi interne ; paiement simulé ; tous marqués « démo ». Branchement réel (agrégateur local, MADAPI de MTN, code court ARCEP) en V2 |
 | Q-04 | Barèmes TDL | fictifs, marqués « fictif » |

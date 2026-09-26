@@ -654,6 +654,34 @@ describe('AlerteAgri API (e2e, real database)', () => {
       expect(r.body.machineTranslated).toBe(false);
     });
 
+    it('an agent removes an audio, traced; a producer cannot; a second removal is a 404', async () => {
+      voice.synthesize = async () => ogg;
+      const c = await draftSheet();
+      await http()
+        .post(`/cms/contents/${c.id}/voice/fon`)
+        .set(as('agent'))
+        .send({ text: 'Wema' })
+        .expect(201);
+      await http()
+        .delete(`/cms/contents/${c.id}/audio/fon`)
+        .set(as('producer'))
+        .expect(403);
+      await http()
+        .delete(`/cms/contents/${c.id}/audio/fon`)
+        .set(as('agent'))
+        .expect(200);
+      await http().get(`/contents/${c.id}/audio/fon`).expect(404);
+      await http()
+        .delete(`/cms/contents/${c.id}/audio/fon`)
+        .set(as('agent'))
+        .expect(404);
+      expect(
+        await prisma.auditLog.count({
+          where: { entityId: c.id, action: 'content.audio.remove' },
+        }),
+      ).toBe(1);
+    });
+
     it('never replaces a recording made by a person', async () => {
       voice.synthesize = async () => ogg;
       const c = await draftSheet();

@@ -318,4 +318,18 @@ export class ContentService {
       machineTranslated,
     };
   }
+
+  // A bad or outdated recording can be withdrawn; the removal is traced like any content change.
+  async removeAudio(authorId: string, id: string, lang: string) {
+    const audio = await this.prisma.contentAudio.findUnique({
+      where: { contentId_lang: { contentId: id, lang } },
+    });
+    if (!audio) throw new NotFoundException('Pas d’audio dans cette langue');
+    await this.prisma.contentAudio.delete({ where: { id: audio.id } });
+    await this.audit.log(authorId, 'content.audio.remove', 'Content', id, {
+      lang,
+      origin: audio.origin,
+    });
+    return { lang, removed: true };
+  }
 }

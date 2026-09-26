@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseFilePipe,
@@ -138,6 +139,18 @@ export class ContentController {
     file: UploadedAudio,
   ) {
     return this.content.attachAudio(user.userId, id, lang, file);
+  }
+
+  @Delete('cms/contents/:id/audio/:lang')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('AGENT', 'ADMIN')
+  removeAudio(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('lang') lang: string,
+  ) {
+    return this.content.removeAudio(user.userId, id, lang);
   }
 
   @Get('cms/voices')

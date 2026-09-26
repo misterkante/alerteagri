@@ -12,7 +12,7 @@
 | Qualité continue | hooks Husky (pre-commit, commit-msg, pre-push) et CI GitHub Actions en trois jobs ; TypeScript strict ; ESLint à 0 avertissement sur les deux applications |
 | Mutation (règles métier) | 557 mutants détectés sur 573 (97 %), après renforcement des tests V2 (80 % au premier passage) |
 | Failles réintroduites volontairement | 13 sur 13 détectées (V1 : escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN ; V2 : photo visible par tous, regroupement hors commune, rappel envoyé deux fois, rapprochement non limité à la commune, règle notifiée deux fois) ; 4 tests trop faibles révélés puis corrigés |
-| Documentation vérifiée contre le code | `docs_check` : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
+| Documentation vérifiée contre le code | vérification automatique des diagrammes contre le code : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
 | Problèmes connus | 21 inscrits ; ouverts : 3 high, 7 medium, 8 low ; corrigés : KI-008, KI-011, KI-012 |
 | Pentest | API en production testée le 2026-09-26 (`docs/security/pentest-2026-09-26.md`) : aucune faille exploitable ; injections et fichier piégé bloqués en amont par le pare-feu de l'hébergeur, donc non testés côté application en ligne mais couverts en e2e |
 
@@ -57,14 +57,14 @@ Statut : **verified** = prouvé par un test exécuté ; **partial** = une partie
 - **Preuve du rouge** : les 35 premiers tests métier ont échoué contre des fonctions vides (« not implemented ») avant l'implémentation. Un test passait déjà : son assertion `toThrow()` acceptait n'importe quelle erreur, elle a été resserrée. La limite de connexion et le voisinage des communes ont aussi été écrits test d'abord, puis vus rouges.
 - **Tests écrits après le code** (les tests de bout en bout) : leur capacité à échouer a été prouvée en réintroduisant 7 failles. Deux tests passaient pour une mauvaise raison et ont été corrigés : le refus du rôle ADMIN (le champ était rejeté comme inconnu, pas comme interdit) et le reçu falsifié (la réponse invalide contenait encore le montant).
 - **Scénarios de production couverts** : double soumission (PS-01), concurrence (PS-02), panne et réponse incohérente d'Open-Meteo (PS-03, PS-04), usurpation d'accès (PS-07), escalade de rôle (PS-09), fuseau UTC (PS-10), fichier déguisé (PS-15), montants entiers (PS-17), réponse rejouée (PS-19). Non couvert : le volume (PS-13) ; les relevés portent sur 77 communes et 46 jours, sans test de charge.
-- **tamper_check** : 3 signalements, tous traités. Le test de santé supprimé a été réintégré, `role: any` a été typé, et le `eslint-disable` du seed est justifié (sortie console d'un script).
+- **Contrôle d'intégrité des tests** (tests supprimés, typage affaibli, règles de lint désactivées) : 3 signalements, tous traités. Le test de santé supprimé a été réintégré, `role: any` a été typé, et le `eslint-disable` du seed est justifié (sortie console d'un script).
 - **Défauts trouvés et corrigés pendant la livraison** :
   - l'inscription pouvait créer un administrateur ;
   - un rayon de voisinage de 40 km n'atteignait aucune commune au Nord ;
   - un PIN de 4 chiffres était devinable ;
   - un lecteur audio débordait à 360 px ;
   - le lot de démonstration dépendait des parcelles existantes ;
-  - `docs_check` ignorait tout package nommé `reports` (bug corrigé dans l'outil Forge lui-même).
+  - l'outil de vérification des diagrammes ignorait tout package nommé `reports` (bug corrigé dans l'outil lui-même).
 
 ## Qualité du code et accessibilité
 
@@ -84,7 +84,7 @@ Schéma initial `20260926051316_init` (20 tables). Phase : pré-production. Une 
 
 ## Documentation
 
-`docs/architecture/` : carte des 16 packages, diagrammes de classes (domain, alerts, reports, ussd, tax) et de séquence (boucle ravageur, USSD, reçu TDL), vérifiés par `docs_check`. `docs/KNOWN_ISSUES.md` : 21 entrées.
+`docs/architecture/` : carte des 16 packages, diagrammes de classes (domain, alerts, reports, ussd, tax) et de séquence (boucle ravageur, USSD, reçu TDL), vérifiés automatiquement contre le code. `docs/KNOWN_ISSUES.md` : 21 entrées.
 
 ## Reste à faire
 

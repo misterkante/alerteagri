@@ -11,3 +11,11 @@ coverage
 e2e/.auth
 playwright-report
 test-results
+
+# Local agent and tooling configuration: kept on the machine, never tracked
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.forge/
+.claude/
+docs/STATE.md

@@ -100,7 +100,7 @@ Trois principes :
 ## 4. Périmètre fonctionnel
 
 Priorité : **M** = MVP livré le 2026-09-26 ; **V2** = feuille de route.
-Chaque exigence porte un identifiant repris dans `docs/SPEC.md` (pipeline Forge).
+Chaque exigence porte un identifiant repris dans `docs/SPEC.md`, avec ses critères d'acceptation et les tests qui les prouvent.
 
 ### 4.1 Décider : monitoring et alerte précoce (cœur du MVP)
 
@@ -202,11 +202,11 @@ Chaque exigence porte un identifiant repris dans `docs/SPEC.md` (pipeline Forge)
 | Identité | Connexion par numéro de téléphone et code à usage unique pour le MVP ; connexion par NPI (ANIP via X-Road) en V2 |
 | Données personnelles | Conformité au Code du numérique (loi 2017-20, livre 5) : minimisation, finalités déclarées, consentement, droit d'accès ; déclaration à l'APDP avant la mise en production |
 | Hébergement | Démo sur un cloud ; production selon la politique nationale de classification des données en cours d'élaboration, avec hébergement national pour les données sensibles |
-| Sécurité | Rôles et contrôle d'accès côté serveur sur chaque ressource, limitation de débit, journal d'audit des actions sensibles (alertes officielles, barèmes, encaissements) ; pentest de chaque grosse fonctionnalité (Forge `pentest-gate`) |
+| Sécurité | Rôles et contrôle d'accès côté serveur sur chaque ressource, limitation de débit, journal d'audit des actions sensibles (alertes officielles, barèmes, encaissements) ; test d'intrusion après chaque grosse fonctionnalité |
 | Interopérabilité | API REST documentée (OpenAPI), adaptateurs par source externe derrière une interface ; chaque adaptateur a un mode simulé explicite |
 | Disponibilité | L'alerte doit partir même si un fournisseur SMS tombe : bascule sur un second fournisseur, file de réessai |
 | Traçabilité | Chaque chiffre affiché indique sa source et sa date |
-| Qualité | Pipeline Forge : tests écrits avant le code, mutation, tamper check, UML à jour, KNOWN_ISSUES, rapport de livraison |
+| Qualité | Tests écrits avant le code, tests de mutation, contrôle d'intégrité des tests, UML à jour, KNOWN_ISSUES, rapport de livraison, hooks git et intégration continue |
 
 ---
 
@@ -229,7 +229,7 @@ Chaque exigence porte un identifiant repris dans `docs/SPEC.md` (pipeline Forge)
 ```
 
 - **Stack** : NestJS 11, Prisma, PostgreSQL, React (Vite) en PWA, Tailwind ; frontend sur Vercel, API et base sur Render.
-- **Monolithe modulaire** : un module par domaine, avec des frontières documentées dans `docs/architecture/` (diagrammes de classes et de séquence tenus à jour par Forge).
+- **Monolithe modulaire** : un module par domaine, avec des frontières documentées dans `docs/architecture/` (diagrammes de classes et de séquence vérifiés automatiquement contre le code).
 - **Règles d'alerte en données, pas en code** : seuils et fenêtres éditables par l'ATDA dans le CMS.
 
 ---
@@ -266,7 +266,7 @@ Chacun est vérifié par un test automatisé ou une étape de démo rejouable :
    - une livraison de soja crée un lot QR dont la page publique affiche la parcelle géolocalisée ;
    - le tableau « offre face aux besoins GDIZ » affiche l'écart par filière.
 8. **Faible connectivité** : parcours producteur en 3G lente simulée et en mode avion (signalement mis en file, puis envoyé au retour du réseau).
-9. **Qualité** : suite de tests verte au code de sortie, rapport Forge `docs/REPORT.md`, `docs_check` et `tamper_check` propres, KNOWN_ISSUES publié.
+9. **Qualité** : suite de tests verte au code de sortie, rapport de livraison `docs/REPORT.md`, diagrammes et intégrité des tests vérifiés, KNOWN_ISSUES publié.
 
 ---
 
@@ -274,7 +274,7 @@ Chacun est vérifié par un test automatisé ou une étape de démo rejouable :
 
 | Livrable | Contenu |
 |---|---|
-| Dépôt GitHub | code complet, README produit (FR), README techniques, `docs/` Forge (SPEC, architecture UML, KNOWN_ISSUES, REPORT, sécurité) |
+| Dépôt GitHub | code complet, README produit (FR), README techniques, `docs/` (SPEC, architecture UML, KNOWN_ISSUES, REPORT, sécurité) |
 | Plateforme déployée | URL publique ; comptes de démo par rôle ; numéro USSD simulé par une page web |
 | Démo | script de 7 minutes rejouable (section 9), jeu de données réinitialisable |
 | Présentation | vision pour le pays, problème chiffré, démonstration, architecture et interopérabilité, feuille de route, indicateurs d'impact |
@@ -285,10 +285,10 @@ Chacun est vérifié par un test automatisé ou une étape de démo rejouable :
 
 | Créneau | Travail |
 |---|---|
-| J0 soir | Cadrage, SPEC Forge validé ; nouveau dépôt initialisé ; schéma de données ; référentiel des 77 communes |
+| J0 soir | Cadrage, SPEC validé ; nouveau dépôt initialisé ; schéma de données ; référentiel des 77 communes |
 | J0 nuit | MON-01 à MON-07 (relevé, règles, signalement, agrégation, alerte, boucle) ; USSD de signalement |
 | J1 matin | CMS avec audio, fiches réglementaires, TDL avec reçu QR, blocage export ; tableau de bord et carte |
-| J1 9 h à 11 h | Déploiement, données de démo, test en 3G lente, pentest léger, rapport Forge |
+| J1 9 h à 11 h | Déploiement, données de démo, test en 3G lente, pentest léger, rapport de livraison |
 | J1 11 h à 12 h | Répétition de la démo, finalisation de la présentation |
 
 Arbitrage si le temps manque, dans cet ordre : V2 d'abord, puis la carte (remplacée par un tableau), puis le paiement réel (simulé). Jamais la boucle d'alerte, jamais l'inclusion.

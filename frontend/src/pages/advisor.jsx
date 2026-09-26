@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Droplets, LocateFixed, PackagePlus, Sprout, Users } from 'lucide-react';
+import { LocateFixed, PackagePlus, Sprout, Users } from 'lucide-react';
 import { api, newClientId } from '../api';
 import { CropPicker, Demo, ErrorNote, Qr, Shell } from '../ui';
-import { CROPS } from '../lib/crops';
+import { CROPS, cropPicto } from '../lib/crops';
+import { Picto } from '../picto';
 import { fmtDate, fmtNum } from '../lib/format';
 import { useSession } from '../lib/session';
 
@@ -32,44 +33,46 @@ function ParcelDetail({ parcel }) {
     };
   }, [parcel.id, parcel.sownAt]);
   return (
-    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-      {parcel.sownAt ? (
-        <ol className="space-y-1" aria-label="Étapes de culture">
-          {steps.map((s) => {
-            const done = new Date(s.due).getTime() <= now;
-            return (
-              <li key={s.id} className={`flex items-center gap-2 text-sm ${done ? 'text-soil-muted' : ''}`}>
-                <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${done ? 'bg-status-calm' : 'border-2 border-soil-line'}`}
-                  aria-hidden="true"
-                />
-                <span className="w-16 shrink-0 tabular-nums">{fmtDate(s.due)}</span>
-                <span>
-                  {s.label}
-                  {s.sentAt ? ' · SMS envoyé' : ''}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <p className="text-sm text-soil-muted">Date de semis non déclarée : pas d’étapes ni de rappels.</p>
-      )}
+    <div className="mt-4 space-y-4">
       {water && (
-        <div className={`rounded-xl p-3 ${LEVEL[water.level][0]}`}>
-          <p className="flex items-center gap-2 font-bold">
-            <Droplets className="h-5 w-5" aria-hidden="true" />
+        <div className={`rounded-2xl p-4 ${LEVEL[water.level][0]}`}>
+          <p className="flex items-center gap-2 text-[16px] font-semibold">
+            <Picto name="goutte" size={24} />
             {LEVEL[water.level][1]}
           </p>
           {water.balanceMm !== null && (
-            <p className="text-sm">
+            <p className="mt-1 text-[14px] text-soil">
               Bilan pluie moins besoins en eau de la culture depuis le semis :{' '}
               <strong className="tabular-nums">{fmtNum(water.balanceMm, 1)} mm</strong> sur {water.days} jours
               {water.kc ? ` (coefficient cultural du jour : ${fmtNum(water.kc, 2)})` : ''}.
             </p>
           )}
-          <p className="mt-1 text-xs">{water.source ?? water.reason}</p>
+          <p className="mt-1 text-[12px] text-soil">{water.source ?? water.reason}</p>
         </div>
+      )}
+      {parcel.sownAt ? (
+        <ol className="relative ml-2 space-y-3 border-l-2 border-soil-line pl-5" aria-label="Étapes de culture">
+          {steps.map((s) => {
+            const done = new Date(s.due).getTime() <= now;
+            return (
+              <li key={s.id} className="relative">
+                <span
+                  className={`absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-surface ${done ? 'bg-status-calm' : 'bg-soil-line'}`}
+                  aria-hidden="true"
+                />
+                <p className={`text-[15px] ${done ? 'text-soil-muted' : 'font-semibold'}`}>{s.label}</p>
+                <p className="text-[13px] text-soil-muted">
+                  {fmtDate(s.due)}
+                  {s.sentAt ? ' · SMS envoyé' : ''}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <p className="rounded-2xl bg-surface-raised p-3 text-[14px] text-soil-muted">
+          Date de semis non déclarée : pas d’étapes ni de rappels.
+        </p>
       )}
     </div>
   );
@@ -89,9 +92,17 @@ export function MyParcels() {
       <div className="space-y-3">
         {parcels.map((p) => (
           <article key={p.id} className="card">
-            <p className="font-bold">
-              {p.crop.name} · {p.areaHa} ha{p.sownAt ? ` · semé le ${fmtDate(p.sownAt)}` : ''}
-            </p>
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-leaf-light">
+                <Picto name={cropPicto(p.cropId ?? p.crop.id)} size={32} />
+              </span>
+              <div>
+                <p className="text-[16px] font-semibold">
+                  {p.crop.name} · {fmtNum(p.areaHa, p.areaHa % 1 ? 1 : 0)} ha
+                </p>
+                <p className="text-[13px] text-soil-muted">{p.sownAt ? `Semé le ${fmtDate(p.sownAt)}` : 'Semis non déclaré'}</p>
+              </div>
+            </div>
             <ParcelDetail parcel={p} />
           </article>
         ))}

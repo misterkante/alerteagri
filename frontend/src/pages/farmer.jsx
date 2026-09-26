@@ -1,135 +1,157 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  AlertTriangle,
-  BellRing,
-  Bug,
-  CheckCircle2,
-  Clock,
-  CloudRain,
-  FlaskConical,
-  Gavel,
-  Hourglass,
-  Phone,
-  Receipt,
-  ShieldAlert,
-  ShieldCheck,
-  ShieldQuestion,
-  ShoppingBasket,
-  Sprout,
-  Sun,
-  Wheat,
-  BookOpen,
-  Ban,
-  Camera,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Gavel, MapPin, Pause, Play } from 'lucide-react';
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
-import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, SpeakButton, Stat, TileRadioGroup, Verdict } from '../ui';
-import { fmtDate, fmtTime } from '../lib/format';
+import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, SpeakButton, TileRadioGroup, Verdict } from '../ui';
+import { Picto } from '../picto';
+import { fmtDate, fmtDay, fmtLongDate, fmtNum, fmtTime } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
 import { HOME_BY_ROLE, LANG_LABEL, LANG_TAG } from '../lib/constants';
 
+// The weather a farmer plans the day with: today and the next two days, in pictures first.
+function weatherPicto(rainMm) {
+  if (rainMm >= 10) return 'pluie';
+  if (rainMm >= 1) return 'nuage-soleil';
+  return 'soleil';
+}
+
+function WeatherToday({ communeId, communeName }) {
+  const [days, setDays] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    api(`/weather/${communeId}`, { auth: false })
+      .then((w) => {
+        if (!alive) return;
+        const today = new Date().toISOString().slice(0, 10);
+        setDays(w.days.filter((d) => d.date.slice(0, 10) >= today).slice(0, 3));
+      })
+      .catch(() => alive && setDays([]));
+    return () => {
+      alive = false;
+    };
+  }, [communeId]);
+  if (!days?.length) return null;
+  const [today, ...next] = days;
+  return (
+    <section className="card" aria-label={`Météo à ${communeName}`}>
+      <div className="flex items-center gap-4">
+        <Picto name={weatherPicto(today.rainMm)} size={64} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] text-soil-muted">Aujourd’hui à {communeName}</p>
+          <p className="font-display text-[26px] font-bold leading-tight">{fmtNum(today.tmaxC)} °C</p>
+          <p className="text-[15px]">
+            {today.rainMm >= 1 ? `${fmtNum(today.rainMm, 1)} mm de pluie` : 'Pas de pluie'} · humidité {fmtNum(today.humidity)} %
+          </p>
+        </div>
+      </div>
+      <ul className="mt-4 grid grid-cols-2 gap-2">
+        {next.map((d) => (
+          <li key={d.date} className="flex items-center gap-2 rounded-2xl bg-surface-raised px-3 py-2">
+            <Picto name={weatherPicto(d.rainMm)} size={28} />
+            <span className="text-[14px]">
+              <span className="font-semibold">{fmtDay(d.date)}</span> · {d.rainMm >= 1 ? `${fmtNum(d.rainMm, 1)} mm` : 'sec'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const TILE_TINT = { green: 'bg-leaf-light', yellow: 'bg-warn-light', red: 'bg-danger-light', neutral: 'bg-surface' };
+
+function ActionTile({ to, picto, label, tint = 'neutral', hint }) {
+  return (
+    <Link to={to} className={`tile ${TILE_TINT[tint]}`}>
+      <Picto name={picto} size={44} />
+      <span>
+        {label}
+        {hint && <span className="mt-0.5 block text-[13px] font-medium text-soil-muted">{hint}</span>}
+      </span>
+    </Link>
+  );
+}
+
 export function Home() {
   const [session] = useSession();
-  const [stats, setStats] = useState(null);
+  const [weather, setWeather] = useState(null);
   useEffect(() => {
-    Promise.all([
-      api('/communes', { auth: false }),
-      api('/contents', { auth: false }),
-      api('/weather/status', { auth: false }),
-      api('/market/listings', { auth: false }),
-    ])
-      .then(([c, f, w, l]) => setStats({ communes: c.length, fiches: f.length, weather: w?.finishedAt, listings: l.length }))
+    api('/weather/status', { auth: false })
+      .then((w) => setWeather(w?.finishedAt))
       .catch(() => {});
   }, []);
   return (
-    <Shell title="Accueil" back={false}>
-      <section className="overflow-hidden rounded-2xl bg-flag-green text-white">
-        <div className="p-6 sm:p-8">
-          <p className="text-sm font-bold uppercase tracking-widest">Bénin · 77 communes surveillées</p>
-          <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">
-            Voir venir,
-            <br />
-            <span className="text-flag-yellow">agir à temps.</span>
-          </h2>
-          <p className="mt-3 max-w-xl text-base">
-            Alertes météo et ravageurs, conseil de semis, fiches dans votre langue, marché et taxe communale. Pour tous les producteurs,
-            même sans lire, sans smartphone ou sans réseau.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {session ? (
-              <Link to={HOME_BY_ROLE[session.user.role] ?? '/'} className="btn bg-surface text-leaf hover:bg-surface-raised">
-                Continuer ({session.user.name})
-              </Link>
-            ) : (
-              <Link to="/connexion" className="btn bg-surface text-leaf hover:bg-surface-raised">
-                Se connecter
-              </Link>
-            )}
-            <Link to="/telephone" className="btn border border-white/60 text-white hover:bg-white/10">
-              <Phone className="h-5 w-5" aria-hidden="true" /> Téléphone USSD
+    <Shell title="AlerteAgri" back={false}>
+      <section className="pt-2">
+        <div className="flex gap-2" aria-hidden="true">
+          {['pluie', 'chenilles', 'mais', 'marche'].map((p) => (
+            <span key={p} className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface shadow-card">
+              <Picto name={p} size={34} />
+            </span>
+          ))}
+        </div>
+        <h2 className="mt-5 text-[30px] font-bold leading-[1.15]">
+          Voir venir,
+          <br />
+          <span className="text-leaf">agir à temps.</span>
+        </h2>
+        <p className="mt-3 text-[17px] leading-relaxed text-soil-muted">
+          La météo de votre commune, les alertes ravageurs, le bon moment pour semer et un marché pour vendre. Même sans savoir lire, sans
+          smartphone ou sans réseau.
+        </p>
+        <div className="mt-6 grid gap-3">
+          {session ? (
+            <Link to={HOME_BY_ROLE[session.user.role] ?? '/'} className="btn-primary">
+              Continuer : {session.user.name}
             </Link>
-          </div>
+          ) : (
+            <Link to="/connexion" className="btn-primary">
+              Se connecter
+            </Link>
+          )}
         </div>
       </section>
 
-      {stats && (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Communes suivies" value={stats.communes} hint="relevé quotidien" />
-          <Stat
-            label="Dernier relevé"
-            value={stats.weather ? fmtTime(stats.weather) : '–'}
-            hint={stats.weather ? fmtDate(stats.weather) : 'Open-Meteo'}
-          />
-          <Stat label="Fiches publiées" value={stats.fiches} hint="lues à voix haute" />
-          <Stat label="Offres ouvertes" value={stats.listings} hint="marché vivrier" />
-        </div>
-      )}
-
-      <h2 className="section-title">Accès libre</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Link to="/semis" className="tile">
-          <Sprout className="h-9 w-9 text-leaf" aria-hidden="true" />
-          Semer ?
-        </Link>
-        <Link to="/pesticide" className="tile">
-          <FlaskConical className="h-9 w-9 text-leaf" aria-hidden="true" />
-          Vérifier un pesticide
-        </Link>
-        <Link to="/fiches" className="tile">
-          <BookOpen className="h-9 w-9 text-leaf" aria-hidden="true" />
-          Fiches et règles
-        </Link>
-        <Link to="/marche" className="tile">
-          <ShoppingBasket className="h-9 w-9 text-leaf" aria-hidden="true" />
-          Marché et prix
-        </Link>
+      <h2 className="section-title">Sans compte</h2>
+      <div className="grid grid-cols-2 gap-3">
+        <ActionTile to="/semis" picto="semis" label="Semer ?" hint="selon la pluie tombée" tint="green" />
+        <ActionTile to="/pesticide" picto="pesticide" label="Vérifier un pesticide" hint="homologué ou non" />
+        <ActionTile to="/fiches" picto="fiche" label="Fiches et règles" hint="lues à voix haute" />
+        <ActionTile to="/marche" picto="marche" label="Marché et prix" hint="offres ouvertes" tint="yellow" />
       </div>
 
+      <Link to="/telephone" className="card mt-3 flex items-center gap-4">
+        <Picto name="telephone" size={44} />
+        <span className="flex-1">
+          <span className="block text-[16px] font-semibold">Sans smartphone ?</span>
+          <span className="block text-[14px] text-soil-muted">Le même service par code USSD, sur tout téléphone.</span>
+        </span>
+        <ChevronRight className="h-5 w-5 text-soil-muted" aria-hidden="true" />
+      </Link>
+
       <h2 className="section-title">Comment ça marche</h2>
-      <ol className="grid gap-3 sm:grid-cols-3">
+      <ol className="card divide-y divide-soil-line/70 p-0">
         {[
-          [CloudRain, 'Observer', 'La météo réelle de chaque commune et les signalements des producteurs et conseillers.'],
-          [BellRing, 'Alerter', 'Une règle validée par l’ATDA déclenche un SMS dans la commune et ses voisines.'],
-          [CheckCircle2, 'Agir', 'Le producteur confirme la lecture puis l’action. L’agent voit la boucle se fermer.'],
-        ].map(([Icon, title, text], i) => (
-          <li key={title} className="card">
-            <p className="flex items-center gap-2 font-bold">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-leaf-light text-sm text-leaf">{i + 1}</span>
-              <Icon className="h-5 w-5 text-leaf" aria-hidden="true" />
-              {title}
-            </p>
-            <p className="mt-2 text-sm text-soil-muted">{text}</p>
+          ['pluie', 'Observer', 'La météo réelle des 77 communes et les signalements du terrain.'],
+          ['alerte', 'Alerter', 'Une règle validée par l’ATDA prévient la commune et ses voisines par SMS.'],
+          ['ok', 'Agir', 'Le producteur confirme la lecture puis l’action ; l’agent voit la boucle se fermer.'],
+        ].map(([p, title, text]) => (
+          <li key={title} className="row">
+            <Picto name={p} size={36} />
+            <span>
+              <span className="block font-semibold">{title}</span>
+              <span className="block text-[14px] text-soil-muted">{text}</span>
+            </span>
           </li>
         ))}
       </ol>
-      <p className="mt-6 text-sm text-soil-muted">
-        Données météo Open-Meteo. Les éléments marqués « démo » sont simulés.{' '}
+      <p className="mt-6 text-[13px] text-soil-muted">
+        Météo Open-Meteo{weather ? `, relevée le ${fmtDate(weather)} à ${fmtTime(weather)}` : ''}. Ce qui est simulé porte la mention « démo
+        ».{' '}
         <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>
           API ouverte
         </a>
-        .
       </p>
     </Shell>
   );
@@ -154,14 +176,19 @@ export function Login() {
   };
   return (
     <Shell title="Connexion">
-      <form className="card space-y-4" onSubmit={submit} method="post">
+      <div className="flex flex-col items-center pb-2 pt-4 text-center">
+        <Picto name="cle" size={64} />
+        <h2 className="mt-3 text-[24px] font-bold">Entrez dans votre espace</h2>
+        <p className="mt-1 text-[15px] text-soil-muted">Votre numéro de téléphone et votre code à 4 chiffres.</p>
+      </div>
+      <form className="mt-4 space-y-4" onSubmit={submit} method="post">
         <div>
           <label className="label" htmlFor="phone">
             Numéro de téléphone
           </label>
           <input
             id="phone"
-            className="input"
+            className="input text-[18px] tracking-wide"
             inputMode="tel"
             autoComplete="tel"
             value={phone}
@@ -175,7 +202,7 @@ export function Login() {
           </label>
           <input
             id="pin"
-            className="input tracking-[0.5em]"
+            className="input text-center font-display text-[24px] tracking-[0.6em]"
             inputMode="numeric"
             type="password"
             maxLength={4}
@@ -190,12 +217,12 @@ export function Login() {
         </button>
         <ErrorNote error={error} />
       </form>
-      <div className="card mt-4 text-sm">
-        <p className="font-bold">
+      <div className="mt-8 rounded-2xl bg-surface-raised p-4 text-[14px]">
+        <p className="font-semibold">
           Comptes de démonstration <Demo />
         </p>
-        <p>Producteurs : +22997000001 (Parakou), +22997000004 (Bohicon) · Acheteur : +22996000001 · PIN 1234.</p>
-        <p>Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
+        <p className="mt-1">Producteurs : +22997000001 (Parakou), +22997000004 (Bohicon) · Acheteur : +22996000001 · PIN 1234.</p>
+        <p className="mt-1 text-soil-muted">Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
       </div>
     </Shell>
   );
@@ -203,38 +230,55 @@ export function Login() {
 
 export function ProducerHome() {
   const [session] = useSession();
-  const [unread, setUnread] = useState(0);
+  const { communes } = useCommune();
+  const [unread, setUnread] = useState([]);
   useEffect(() => {
+    let alive = true;
     api('/alerts/me')
-      .then((n) => setUnread(n.filter((x) => !x.readAt).length))
+      .then((n) => alive && setUnread(n.filter((x) => !x.readAt)))
       .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
   if (!session) return <SignInPrompt title="Producteur" audience="producteurs et conseillers agricoles" />;
-  const tiles = [
-    ['/alertes', BellRing, `Mes alertes${unread ? ` (${unread})` : ''}`],
-    ['/semis', Sprout, 'Semer maintenant ?'],
-    ['/signaler', Bug, 'Signaler un ravageur'],
-    ['/recolte', Sun, 'Après la récolte'],
-    ['/pesticide', FlaskConical, 'Vérifier un pesticide'],
-    ['/fiches', BookOpen, 'Fiches et règles'],
-    ['/marche', ShoppingBasket, 'Vendre'],
-    ['/telephone', Phone, 'Téléphone USSD'],
-  ];
+  const advisor = session.user.role === 'ADVISOR';
+  const commune = communes.find((c) => c.id === session.user.communeId);
   return (
-    <Shell title={session.user.role === 'ADVISOR' ? 'Conseiller' : 'Mon champ'} back={false}>
-      <p className="mb-3 text-lg">
-        Bonjour <strong>{session.user.name}</strong>
-      </p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map(([to, Icon, label]) => (
-          <Link key={to} to={to} className={`tile ${to === '/alertes' && unread ? 'border-danger' : ''}`} onClick={() => {}}>
-            <Icon className={`h-10 w-10 ${to === '/alertes' && unread ? 'text-danger' : 'text-leaf'}`} aria-hidden="true" />
-            {label}
-          </Link>
-        ))}
+    <Shell title={advisor ? 'Conseiller' : 'Mon champ'} back={false}>
+      <p className="text-[15px] text-soil-muted">{fmtLongDate(new Date())}</p>
+      <h2 className="mt-0.5 text-[26px] font-bold">Bonjour {session.user.name}</h2>
+
+      {unread.length > 0 && (
+        <Link to="/alertes" className="mt-4 flex items-center gap-4 rounded-3xl bg-danger-light p-4 shadow-card">
+          <Picto name="alerte" size={44} />
+          <span className="flex-1">
+            <span className="block text-[17px] font-bold text-danger">
+              {unread.length === 1 ? '1 alerte à lire' : `${unread.length} alertes à lire`}
+            </span>
+            <span className="line-clamp-2 block text-[14px] text-soil">{unread[0].alert?.message ?? unread[0].body}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-danger" aria-hidden="true" />
+        </Link>
+      )}
+
+      <div className="mt-4">
+        <WeatherToday communeId={session.user.communeId} communeName={commune?.name ?? 'votre commune'} />
+      </div>
+
+      <h2 className="section-title">Que voulez-vous faire ?</h2>
+      <div className="grid grid-cols-2 gap-3">
+        <ActionTile to="/semis" picto="semis" label="Semer maintenant ?" tint="green" />
+        <ActionTile to="/signaler" picto="chenilles" label="Signaler un ravageur" tint="red" />
+        <ActionTile to="/recolte" picto="soleil" label="Après la récolte" tint="yellow" />
+        <ActionTile to="/marche" picto="marche" label="Vendre" tint="yellow" />
+        <ActionTile to="/pesticide" picto="pesticide" label="Vérifier un pesticide" />
+        <ActionTile to="/fiches" picto="fiche" label="Fiches et règles" />
+        <ActionTile to="/alertes" picto="alerte" label="Mes alertes" hint={unread.length ? `${unread.length} non lue(s)` : 'tout est lu'} />
+        <ActionTile to="/telephone" picto="telephone" label="Téléphone USSD" />
       </div>
       {session.user.role === 'PRODUCER' && <MyParcels />}
-      {session.user.role === 'ADVISOR' && <AdvisorPanel />}
+      {advisor && <AdvisorPanel />}
     </Shell>
   );
 }
@@ -265,17 +309,29 @@ function AdvisorPanel() {
     }
   };
   return (
-    <section className="card mt-6">
-      <h2 className="text-lg font-bold">Mes producteurs ({producers.length})</h2>
-      <p className="text-sm">Vous pouvez signaler, déclarer une récolte ou vendre au nom d’un producteur : chaque action est tracée.</p>
-      <ul className="mt-2 divide-y divide-soil-line">
+    <section className="mt-7">
+      <h2 className="mb-1 text-[17px] font-semibold">Mes producteurs ({producers.length})</h2>
+      <p className="mb-3 text-[14px] text-soil-muted">
+        Vous pouvez signaler, déclarer une récolte ou vendre au nom d’un producteur : chaque action est tracée.
+      </p>
+      <ul className="card divide-y divide-soil-line/70 p-0">
         {producers.map((p) => (
-          <li key={p.id} className="py-2">
-            {p.name} · {p.phone}
+          <li key={p.id} className="row">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-leaf-light font-display font-bold text-leaf"
+              aria-hidden="true"
+            >
+              {p.name.charAt(0)}
+            </span>
+            <span>
+              <span className="block font-semibold">{p.name}</span>
+              <span className="block text-[14px] text-soil-muted">{p.phone}</span>
+            </span>
           </li>
         ))}
       </ul>
-      <form className="mt-3 grid gap-2 sm:grid-cols-4" onSubmit={enrol} method="post">
+      <form className="card mt-3 grid gap-3" onSubmit={enrol} method="post">
+        <p className="font-semibold">Inscrire un producteur</p>
         <input
           className="input"
           placeholder="Nom"
@@ -305,26 +361,35 @@ function AdvisorPanel() {
         <button className="btn-primary" type="submit">
           Inscrire
         </button>
+        {msg && (
+          <p className="font-semibold text-leaf" role="status">
+            {msg}
+          </p>
+        )}
+        <ErrorNote error={error} />
       </form>
-      {msg && (
-        <p className="mt-2 font-semibold text-leaf" role="status">
-          {msg}
-        </p>
-      )}
-      <ErrorNote error={error} />
     </section>
   );
 }
 
 function CommuneSelect({ communes, value, onChange }) {
   return (
-    <select className="input" value={value} onChange={(e) => onChange(e.target.value)} aria-label="Commune">
-      {communes.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name} ({c.department})
-        </option>
-      ))}
-    </select>
+    <div className="relative">
+      <MapPin className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-leaf" aria-hidden="true" />
+      <select
+        className="input appearance-none pl-11 pr-10 font-semibold"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Commune"
+      >
+        {communes.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name} ({c.department})
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-soil-muted" aria-hidden="true" />
+    </div>
   );
 }
 
@@ -333,10 +398,15 @@ function RainChart({ rain }) {
   const max = Math.max(20, ...rain.map((d) => d.rainMm));
   const w = 12;
   return (
-    <figure className="card mt-4">
-      <figcaption className="mb-2 text-sm font-semibold">
-        Pluie par jour (mm) : mesurée <span className="inline-block h-3 w-3 rounded-sm bg-leaf align-middle" /> prévue{' '}
-        <span className="inline-block h-3 w-3 rounded-sm bg-leaf/35 align-middle" />
+    <figure className="card">
+      <figcaption className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px]">
+        <span className="font-semibold">Pluie par jour (mm)</span>
+        <span className="flex items-center gap-1.5 text-soil-muted">
+          <span className="inline-block h-3 w-3 rounded-sm bg-leaf" /> mesurée
+        </span>
+        <span className="flex items-center gap-1.5 text-soil-muted">
+          <span className="inline-block h-3 w-3 rounded-sm bg-leaf/35" /> prévue
+        </span>
       </figcaption>
       <svg viewBox={`0 0 ${rain.length * w} 110`} className="h-28 w-full" role="img" aria-label="Graphique des pluies mesurées et prévues">
         {rain.map((d, i) => {
@@ -348,9 +418,10 @@ function RainChart({ rain }) {
               y={105 - h}
               width={w - 2}
               height={Math.max(h, 1)}
+              rx="2"
               className={d.isForecast ? 'fill-leaf/35' : 'fill-leaf'}
             >
-              <title>{`${fmtDate(d.date)} : ${d.rainMm} mm`}</title>
+              <title>{`${fmtDate(d.date)} : ${fmtNum(d.rainMm, 1)} mm`}</title>
             </rect>
           );
         })}
@@ -358,6 +429,12 @@ function RainChart({ rain }) {
     </figure>
   );
 }
+
+const SOWING = {
+  SEMEZ: ['good', 'semis', 'Vous pouvez semer'],
+  ATTENDEZ: ['warn', 'sablier', 'Attendez'],
+  HORS_SAISON: ['neutral', 'calendrier', 'Hors saison'],
+};
 
 export function Sowing() {
   const { communes, communeId, setCommuneId } = useCommune();
@@ -378,23 +455,21 @@ export function Sowing() {
       alive = false;
     };
   }, [communeId, cropId]);
-  const tone = { SEMEZ: 'good', ATTENDEZ: 'warn', HORS_SAISON: 'neutral' };
-  const icon = { SEMEZ: CheckCircle2, ATTENDEZ: Hourglass, HORS_SAISON: Clock };
-  const title = { SEMEZ: 'Vous pouvez semer', ATTENDEZ: 'Attendez', HORS_SAISON: 'Hors saison' };
+  const v = result && SOWING[result.verdict];
   return (
     <Shell title="Semer maintenant ?">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <CommuneSelect communes={communes} value={communeId} onChange={setCommuneId} />
         <CropPicker
           value={cropId}
           onChange={setCropId}
           only={['mais', 'soja', 'arachide', 'niebe', 'riz', 'sorgho', 'manioc', 'coton', 'tomate']}
         />
-        {result && <Verdict tone={tone[result.verdict]} Icon={icon[result.verdict]} title={title[result.verdict]} text={result.reason} />}
+        {v && <Verdict tone={v[0]} picto={v[1]} title={v[2]} text={result.reason} />}
         <ErrorNote error={error} />
         {result && <RainChart rain={result.rain} />}
         {result && (
-          <p className="text-sm">
+          <p className="px-1 text-[13px] text-soil-muted">
             Périodes de semis ({result.zone === 'NORD' ? 'Nord, une saison' : 'Sud, deux saisons'}) :{' '}
             {result.windows.map((w) => `${w.from} au ${w.to}`).join(' ; ') || 'non renseignées'}. {result.source}.
           </p>
@@ -405,13 +480,13 @@ export function Sowing() {
 }
 
 const SYMPTOMS = [
-  ['feuilles-trouees', 'Feuilles trouées'],
-  ['chenilles', 'Chenilles'],
-  ['sciure-cornet', 'Sciure dans le cornet'],
-  ['jaunissement', 'Jaunissement'],
-  ['taches', 'Taches'],
-  ['fletrissement', 'Plante flétrie'],
-  ['insectes-piqueurs', 'Petits insectes'],
+  ['feuilles-trouees', 'Feuilles trouées', 'feuilles-trouees'],
+  ['chenilles', 'Chenilles', 'chenilles'],
+  ['sciure-cornet', 'Sciure dans le cornet', 'sciure-cornet'],
+  ['jaunissement', 'Jaunissement', 'jaunissement'],
+  ['taches', 'Taches', 'taches'],
+  ['fletrissement', 'Plante flétrie', 'fletrissement'],
+  ['insectes-piqueurs', 'Petits insectes', 'insectes'],
 ];
 
 function ProducerFor({ value, onChange }) {
@@ -451,6 +526,23 @@ async function compressPhoto(file, max = 1280) {
   });
   canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   return new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.72));
+}
+
+function Step({ n, title, children }) {
+  return (
+    <section>
+      <h2 className="mb-3 flex items-center gap-3 text-[17px] font-semibold">
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-leaf-mid font-display text-[15px] text-leaf-ink"
+          aria-hidden="true"
+        >
+          {n}
+        </span>
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
 }
 
 export function Report() {
@@ -497,7 +589,7 @@ export function Report() {
       <Shell title="Signaler un ravageur">
         <Verdict
           tone="good"
-          Icon={CheckCircle2}
+          picto={done === 'sent' ? 'ok' : 'colis'}
           title={done === 'sent' ? 'Signalement envoyé' : 'Signalement enregistré'}
           text={
             done === 'sent'
@@ -506,7 +598,7 @@ export function Report() {
           }
         />
         <button
-          className="btn-ghost mt-4"
+          className="btn-ghost mt-4 w-full"
           onClick={() => {
             setDone(null);
             setSymptom('');
@@ -519,43 +611,56 @@ export function Report() {
   }
   return (
     <Shell title="Signaler un ravageur">
-      <div className="space-y-4">
+      <div className="space-y-6">
         <ProducerFor value={forUserId} onChange={setFor} />
-        <h2 className="font-bold">1. Quelle culture ?</h2>
-        <CropPicker
-          value={cropId}
-          onChange={setCropId}
-          only={['mais', 'soja', 'arachide', 'niebe', 'riz', 'sorgho', 'manioc', 'coton', 'tomate']}
-        />
-        <h2 className="font-bold">2. Que voyez-vous ?</h2>
-        <TileRadioGroup
-          label="Symptôme"
-          options={SYMPTOMS.map(([id, name]) => ({ id, name, Icon: Bug, iconClass: 'h-7 w-7 text-warn' }))}
-          value={symptom}
-          onChange={setSymptom}
-          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-          tileClass="min-h-20"
-        />
-        <h2 className="font-bold">3. Photo (facultatif)</h2>
-        <label className="tile min-h-20 cursor-pointer">
-          <Camera className="h-7 w-7 text-leaf" aria-hidden="true" />
-          {photo ? `Photo prête (${Math.round(photo.size / 1024)} Ko avant réduction)` : 'Prendre une photo'}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+        <Step n="1" title="Quelle culture ?">
+          <CropPicker
+            value={cropId}
+            onChange={setCropId}
+            only={['mais', 'soja', 'arachide', 'niebe', 'riz', 'sorgho', 'manioc', 'coton', 'tomate']}
           />
-        </label>
-        <button className="btn-primary w-full" disabled={!symptom} onClick={submit}>
-          Envoyer le signalement
-        </button>
+        </Step>
+        <Step n="2" title="Que voyez-vous ?">
+          <TileRadioGroup
+            label="Symptôme"
+            options={SYMPTOMS.map(([id, name, picto]) => ({ id, name, picto }))}
+            value={symptom}
+            onChange={setSymptom}
+            className="grid grid-cols-2 gap-3"
+          />
+        </Step>
+        <Step n="3" title="Une photo ? (facultatif)">
+          <label className="tile min-h-0 cursor-pointer flex-row items-center justify-start">
+            <Picto name="photo" size={40} />
+            <span>{photo ? `Photo prête (${Math.round(photo.size / 1024)} Ko avant réduction)` : 'Prendre une photo'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </Step>
+        <div className="sticky bottom-16 z-10 -mx-4 bg-soil-light/95 px-4 pb-3 pt-2 backdrop-blur-md lg:bottom-0">
+          <button className="btn-primary w-full" disabled={!symptom} onClick={submit}>
+            Envoyer le signalement
+          </button>
+          {!symptom && <p className="mt-1.5 text-center text-[13px] text-soil-muted">Choisissez d’abord ce que vous voyez.</p>}
+        </div>
         <ErrorNote error={error} />
       </div>
     </Shell>
   );
 }
+
+const HARVEST = {
+  SECHEZ: ['warn', 'soleil', 'Séchez maintenant'],
+  COUVREZ: ['bad', 'pluie', 'Couvrez et abritez'],
+  SECHAGE_POSSIBLE: ['good', 'soleil', 'Bon moment pour sécher'],
+  NON_CONCERNE: ['neutral', 'calendrier', 'Non concerné'],
+  PAS_DE_PREVISION: ['neutral', 'sablier', 'Pas de prévision'],
+};
 
 export function Harvest() {
   const [cropId, setCropId] = useState('mais');
@@ -572,18 +677,16 @@ export function Harvest() {
       setError(e.message);
     }
   };
-  const tone = { SECHEZ: 'warn', COUVREZ: 'bad', SECHAGE_POSSIBLE: 'good', NON_CONCERNE: 'neutral', PAS_DE_PREVISION: 'neutral' };
-  const title = {
-    SECHEZ: 'Séchez maintenant',
-    COUVREZ: 'Couvrez et abritez',
-    SECHAGE_POSSIBLE: 'Bon moment pour sécher',
-    NON_CONCERNE: 'Non concerné',
-    PAS_DE_PREVISION: 'Pas de prévision',
-  };
+  const v = result && HARVEST[result.code];
   return (
     <Shell title="Après la récolte">
-      <div className="space-y-4">
-        <p>Maïs et arachide mal séchés développent des aflatoxines, dangereuses pour la santé et refusées à la vente.</p>
+      <div className="space-y-5">
+        <div className="flex items-start gap-3 rounded-2xl bg-warn-light p-4">
+          <Picto name="attention" size={32} />
+          <p className="text-[15px]">
+            Maïs et arachide mal séchés développent des aflatoxines, dangereuses pour la santé et refusées à la vente.
+          </p>
+        </div>
         <ProducerFor value={forUserId} onChange={setFor} />
         <CropPicker value={cropId} onChange={setCropId} only={['mais', 'arachide']} />
         <div>
@@ -595,20 +698,19 @@ export function Harvest() {
         <button className="btn-primary w-full" onClick={submit}>
           Obtenir le conseil
         </button>
-        {result && (
-          <Verdict
-            tone={tone[result.code]}
-            Icon={result.code === 'COUVREZ' ? CloudRain : Sun}
-            title={title[result.code]}
-            text={result.message}
-          />
-        )}
+        {v && <Verdict tone={v[0]} picto={v[1]} title={v[2]} text={result.message} />}
         {result?.notified && <p className="font-semibold text-leaf">Le conseil vous a aussi été envoyé par SMS.</p>}
         <ErrorNote error={error} />
       </div>
     </Shell>
   );
 }
+
+const PESTICIDE = {
+  HOMOLOGUE: ['good', 'ok', 'Homologué'],
+  NON_HOMOLOGUE: ['bad', 'non', 'Non homologué : ne l’utilisez pas'],
+  INCONNU: ['warn', 'attention', 'Produit inconnu'],
+};
 
 export function Pesticide() {
   const [name, setName] = useState('');
@@ -623,39 +725,38 @@ export function Pesticide() {
       setError(err.message);
     }
   };
-  const v =
-    result &&
-    {
-      HOMOLOGUE: ['good', ShieldCheck, 'Homologué'],
-      NON_HOMOLOGUE: ['bad', ShieldAlert, 'Non homologué : ne l’utilisez pas'],
-      INCONNU: ['warn', ShieldQuestion, 'Produit inconnu'],
-    }[result.verdict];
+  const v = result && PESTICIDE[result.verdict];
   return (
     <Shell title="Vérifier un pesticide">
-      <form className="space-y-3" onSubmit={check} method="post">
+      <div className="flex items-center gap-4 pb-2 pt-2">
+        <Picto name="pesticide" size={52} />
+        <p className="text-[15px] text-soil-muted">Tapez le nom écrit sur le bidon : on vous dit s’il est autorisé au Bénin.</p>
+      </div>
+      <form className="mt-3 space-y-3" onSubmit={check} method="post">
         <label className="label" htmlFor="pname">
           Nom écrit sur le bidon
         </label>
         <input
           id="pname"
-          className="input"
+          className="input text-[18px]"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="ex. SNIPER"
           required
           minLength={3}
+          autoCapitalize="characters"
         />
         <button className="btn-primary w-full" type="submit">
           Vérifier
         </button>
       </form>
       {v && (
-        <div className="mt-4">
-          <Verdict tone={v[0]} Icon={v[1]} title={v[2]} text={[result.message, result.alternative].filter(Boolean).join(' ')} />
+        <div className="mt-5">
+          <Verdict tone={v[0]} picto={v[1]} title={v[2]} text={[result.message, result.alternative].filter(Boolean).join(' ')} />
         </div>
       )}
       {result?.source && (
-        <p className="mt-2 text-sm">
+        <p className="mt-3 px-1 text-[13px] text-soil-muted">
           Source : {result.source} {result.illustrative && <Demo>exemple</Demo>}
         </p>
       )}
@@ -664,16 +765,64 @@ export function Pesticide() {
   );
 }
 
-const PICTO = {
-  bug: Bug,
-  sun: Sun,
-  ban: Ban,
-  flask: FlaskConical,
-  receipt: Receipt,
-  'cloud-rain': CloudRain,
-  sprout: Sprout,
-  wheat: Wheat,
+const SHEET_PICTO = {
+  bug: 'chenilles',
+  sun: 'soleil',
+  ban: 'non',
+  flask: 'pesticide',
+  receipt: 'recu',
+  'cloud-rain': 'pluie',
+  sprout: 'semis',
+  wheat: 'mais',
 };
+const KIND_LABEL = { REGLEMENTATION: 'Règlementation', FICHE_LUTTE: 'Fiche pratique', CALENDRIER: 'Calendrier' };
+
+// A large play button instead of the browser's small player: one tap to listen, progress visible.
+function AudioPill({ src, captions, label }) {
+  const ref = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-surface-raised p-2 pr-4">
+      <button
+        type="button"
+        className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-leaf-mid text-leaf-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40"
+        aria-label={`${playing ? 'Pause' : 'Écouter'} en ${label}`}
+        onClick={() => {
+          const a = ref.current;
+          if (a.paused) a.play().catch(() => {});
+          else a.pause();
+        }}
+      >
+        {playing ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="ml-0.5 h-5 w-5" aria-hidden="true" />}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold">{label}</p>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-soil-line" aria-hidden="true">
+          <div className="h-full rounded-full bg-leaf transition-[width]" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      <audio
+        ref={ref}
+        preload="none"
+        src={src}
+        crossOrigin="anonymous"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => {
+          setPlaying(false);
+          setProgress(0);
+        }}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          if (a.duration) setProgress((a.currentTime / a.duration) * 100);
+        }}
+      >
+        <track kind="captions" srcLang="fr" label="Français" src={captions} default />
+      </audio>
+    </div>
+  );
+}
 
 export function Sheets() {
   const [items, setItems] = useState([]);
@@ -686,62 +835,54 @@ export function Sheets() {
   return (
     <Shell title="Fiches et règles">
       <ErrorNote error={error} />
-      <div className="space-y-3">
-        {items.map((c) => {
-          const Icon = PICTO[c.pictogram] ?? BookOpen;
-          return (
-            <article key={c.id} className="card">
-              <div className="flex items-start gap-3">
-                <Icon className="h-9 w-9 shrink-0 text-leaf" aria-hidden="true" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase text-soil/70">
-                    {c.kind === 'REGLEMENTATION' ? 'Règlementation' : c.kind === 'FICHE_LUTTE' ? 'Fiche pratique' : 'Calendrier'}
-                  </p>
-                  <h2 className="text-lg font-bold">{c.title}</h2>
-                  <p className="mt-1">{c.body}</p>
-                  {c.officialRef && (
-                    <p className="mt-1 text-sm">
-                      <Gavel className="mr-1 inline h-4 w-4" aria-hidden="true" />
-                      {c.officialRef}
+      <div className="space-y-4">
+        {items.map((c) => (
+          <article key={c.id} className="card">
+            <div className="flex items-start gap-3">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface-raised">
+                <Picto name={SHEET_PICTO[c.pictogram] ?? 'fiche'} size={36} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-soil-muted">{KIND_LABEL[c.kind] ?? 'Fiche'}</p>
+                <h2 className="text-[18px] font-semibold leading-snug">{c.title}</h2>
+              </div>
+            </div>
+            <p className="mt-3 text-[16px] leading-relaxed">{c.body}</p>
+            {c.officialRef && (
+              <p className="mt-2 flex items-start gap-1.5 text-[13px] text-soil-muted">
+                <Gavel className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                {c.officialRef}
+              </p>
+            )}
+            <div className="mt-4 space-y-2">
+              <SpeakButton text={`${c.title}. ${c.body}`} label="Écouter en français" />
+              {c.audios.map((a) => (
+                <div key={a.lang} className="space-y-1.5">
+                  <AudioPill
+                    src={`${API_URL}/contents/${c.id}/audio/${a.lang}`}
+                    captions={`${API_URL}/contents/${c.id}/captions.vtt`}
+                    label={LANG_LABEL[a.lang] ?? a.lang}
+                  />
+                  {a.origin === 'SYNTHETIC' && (
+                    <p className="px-1">
+                      <span className="badge bg-warn-light text-warn">voix de synthèse · {a.provider}</span>
                     </p>
                   )}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <SpeakButton text={`${c.title}. ${c.body}`} label="Écouter en français" />
-                    {c.audios.map((a) => (
-                      <div key={a.lang} className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-semibold">
-                          {LANG_LABEL[a.lang] ?? a.lang}
-                          {a.origin === 'SYNTHETIC' && (
-                            <span className="badge ml-2 bg-warn-light text-warn">voix de synthèse · {a.provider}</span>
-                          )}
-                        </span>
-                        <audio
-                          controls
-                          preload="none"
-                          src={`${API_URL}/contents/${c.id}/audio/${a.lang}`}
-                          className="h-10 w-full max-w-full"
-                          crossOrigin="anonymous"
-                        >
-                          <track kind="captions" srcLang="fr" label="Français" src={`${API_URL}/contents/${c.id}/captions.vtt`} default />
-                        </audio>
-                        {a.origin === 'SYNTHETIC' && a.transcript && (
-                          <details className="text-sm">
-                            <summary className="cursor-pointer font-semibold">
-                              Texte lu{a.machineTranslated ? ' (traduction automatique, à faire valider par un locuteur)' : ''}
-                            </summary>
-                            <p className="mt-1" lang={LANG_TAG[a.lang]}>
-                              {a.transcript}
-                            </p>
-                          </details>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {a.origin === 'SYNTHETIC' && a.transcript && (
+                    <details className="px-1 text-[14px]">
+                      <summary className="cursor-pointer font-semibold">
+                        Texte lu{a.machineTranslated ? ' (traduction automatique, à faire valider par un locuteur)' : ''}
+                      </summary>
+                      <p className="mt-1" lang={LANG_TAG[a.lang]}>
+                        {a.transcript}
+                      </p>
+                    </details>
+                  )}
                 </div>
-              </div>
-            </article>
-          );
-        })}
+              ))}
+            </div>
+          </article>
+        ))}
       </div>
     </Shell>
   );
@@ -764,33 +905,41 @@ export function Alerts() {
   return (
     <Shell title="Mes alertes">
       <ErrorNote error={error} />
-      {!items.length && <p className="card">Aucune alerte pour vous. Bonne saison.</p>}
+      {!items.length && !error && (
+        <div className="flex flex-col items-center px-6 pt-12 text-center">
+          <Picto name="ok" size={72} />
+          <p className="mt-4 font-display text-[20px] font-semibold">Aucune alerte pour vous</p>
+          <p className="mt-1 text-[15px] text-soil-muted">Bonne saison. Vous serez prévenu ici et par SMS.</p>
+        </div>
+      )}
       <div className="space-y-3">
         {items.map((n) => (
-          <article key={n.id} className={`card border-2 ${n.readAt ? '' : 'border-danger'}`}>
+          <article key={n.id} className={`rounded-3xl p-4 shadow-card ${n.readAt ? 'bg-surface' : 'bg-danger-light'}`}>
             <div className="flex items-start gap-3">
-              <AlertTriangle className={`h-8 w-8 shrink-0 ${n.readAt ? 'text-soil/50' : 'text-danger'}`} aria-hidden="true" />
-              <div className="flex-1">
-                <p className="text-sm text-soil-muted">
-                  {fmtDate(n.createdAt)} ·{' '}
-                  {{ ALERT: 'Alerte', RAPPEL: 'Rappel de culture', REGLEMENTATION: 'Nouvelle règle' }[n.kind] ?? 'Alerte'} · {n.channel}
+              <Picto name={n.kind === 'RAPPEL' ? 'rappel' : n.kind === 'REGLEMENTATION' ? 'fiche' : 'alerte'} size={40} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] text-soil-muted">
+                  {{ ALERT: 'Alerte', RAPPEL: 'Rappel de culture', REGLEMENTATION: 'Nouvelle règle' }[n.kind] ?? 'Alerte'} ·{' '}
+                  {fmtDate(n.createdAt)}
                 </p>
-                <p className="font-semibold">{n.alert?.message ?? n.body.replace(/^AlerteAgri[^:]*: /, '')}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <SpeakButton text={n.alert?.message ?? n.body} />
-                  {!n.readAt && (
-                    <button className="btn-primary min-h-10 py-2" onClick={() => ack(n.id)}>
-                      J’ai lu
-                    </button>
-                  )}
-                  {n.readAt && !n.action && (
-                    <button className="btn-ghost min-h-10 py-2" onClick={() => ack(n.id, 'mesure prise')}>
-                      J’ai agi
-                    </button>
-                  )}
-                  {n.action && <span className="badge bg-leaf-light text-leaf">Action : {n.action}</span>}
-                </div>
+                <p className="mt-0.5 text-[16px] font-semibold leading-snug">
+                  {n.alert?.message ?? n.body.replace(/^AlerteAgri[^:]*: /, '')}
+                </p>
               </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <SpeakButton text={n.alert?.message ?? n.body} />
+              {!n.readAt && (
+                <button className="btn-primary min-h-[44px] rounded-full px-5" onClick={() => ack(n.id)}>
+                  J’ai lu
+                </button>
+              )}
+              {n.readAt && !n.action && (
+                <button className="btn-ghost min-h-[44px] rounded-full px-5" onClick={() => ack(n.id, 'mesure prise')}>
+                  J’ai agi
+                </button>
+              )}
+              {n.action && <span className="badge self-center bg-leaf-light text-leaf">Action : {n.action}</span>}
             </div>
           </article>
         ))}

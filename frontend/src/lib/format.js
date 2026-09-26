@@ -15,3 +15,8 @@ export const fmtDateTime = (d) =>
 export const fmtNum = (n, digits = 0) =>
   Number(n).toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 export const fmtFcfa = (n) => `${fmtNum(Math.round(n))} FCFA`;
+export const fmtDay = (d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', timeZone: TZ });
+export const fmtLongDate = (d) => {
+  const s = new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};

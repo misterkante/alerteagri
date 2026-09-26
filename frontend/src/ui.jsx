@@ -12,22 +12,25 @@ import {
   LayoutDashboard,
   LogOut,
   MapPinned,
-  Phone,
   Receipt,
   ShoppingBasket,
-  Volume2,
-  Wifi,
 } from 'lucide-react';
 import { API_URL, getSession } from './api';
 import { CROPS } from './lib/crops';
 import { useOnline, useSession } from './lib/session';
 import { speak } from './lib/speech';
 import { STATUS } from './lib/status';
+import { Picto } from './picto';
 
 export function SpeakButton({ text, label = 'Écouter' }) {
   return (
-    <button type="button" className="btn-ghost min-h-10 px-3 py-2 text-sm" onClick={() => speak(text)} aria-label={`${label} : ${text}`}>
-      <Volume2 className="h-5 w-5" aria-hidden="true" /> {label}
+    <button
+      type="button"
+      className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-surface px-4 text-[15px] font-semibold text-soil shadow-card transition active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40"
+      onClick={() => speak(text)}
+      aria-label={`${label} : ${text}`}
+    >
+      <Picto name="ecouter" size={22} /> {label}
     </button>
   );
 }
@@ -38,7 +41,7 @@ const NAV_BY_ROLE = {
     ['/alertes', Bell, 'Alertes'],
     ['/signaler', Bug, 'Signaler'],
     ['/marche', ShoppingBasket, 'Marché'],
-    ['/telephone', Phone, 'USSD'],
+    ['/fiches', BookOpen, 'Fiches'],
   ],
   ADVISOR: [
     ['/producteur', Home, 'Accueil'],
@@ -83,38 +86,40 @@ export function Shell({ title, back = true, wide = false, children }) {
       >
         Aller au contenu
       </a>
-      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur">
-        <div className={`mx-auto flex items-center gap-2 px-4 py-2 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
-          {back && (
-            <button className="btn-ghost min-h-10 px-2 py-2" onClick={() => navigate(-1)} aria-label="Retour">
-              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+      <header className="sticky top-0 z-20 bg-soil-light/90 backdrop-blur-md">
+        {/* Green, yellow, red rule of the national charter's brand block. */}
+        <div className="flex h-[3px]" aria-hidden="true">
+          <span className="flex-1 bg-flag-green" />
+          <span className="flex-1 bg-flag-yellow" />
+          <span className="flex-1 bg-flag-red" />
+        </div>
+        <div className={`mx-auto flex h-14 items-center gap-1 px-2 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
+          {back ? (
+            <button className="icon-btn" onClick={() => navigate(-1)} aria-label="Retour">
+              <ArrowLeft className="h-6 w-6" aria-hidden="true" />
             </button>
+          ) : (
+            <Link to="/" className="icon-btn" aria-label="AlerteAgri, accueil">
+              <img src="/icon.svg" alt="" className="h-8 w-8" />
+            </Link>
           )}
-          <Link to="/" className="flex shrink-0 items-center gap-2 font-black text-leaf" aria-label="AlerteAgri, accueil">
-            <img src="/icon.svg" alt="" className="h-8 w-8" /> <span className="hidden sm:inline">AlerteAgri</span>
-          </Link>
-          <h1 className="min-w-0 flex-1 truncate text-lg font-bold">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate px-1 text-[19px] font-semibold">{title}</h1>
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
             {nav.map(([to, Icon, label]) => (
               <Link
                 key={to}
                 to={to}
                 aria-current={pathname === to ? 'page' : undefined}
-                className={`flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold ${pathname === to ? 'bg-leaf-light text-leaf' : 'text-soil-muted hover:bg-surface-raised'}`}
+                className={`flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${pathname === to ? 'bg-leaf-light text-leaf' : 'text-soil-muted hover:bg-surface'}`}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 {label}
               </Link>
             ))}
           </nav>
-          <span className={`badge shrink-0 ${online ? 'bg-leaf-light text-leaf' : 'bg-danger-light text-danger'}`} role="status">
-            {online ? <Wifi className="h-3 w-3" aria-hidden="true" /> : <CloudOff className="h-3 w-3" aria-hidden="true" />}
-            <span className="hidden sm:inline">{online ? 'En ligne' : 'Hors ligne'}</span>
-            {pending ? ` · ${pending}` : ''}
-          </span>
           {session && (
             <button
-              className="btn-ghost min-h-10 shrink-0 px-2 py-2"
+              className="icon-btn text-soil-muted"
               onClick={() => {
                 setS(null);
                 navigate('/');
@@ -125,32 +130,35 @@ export function Shell({ title, back = true, wide = false, children }) {
             </button>
           )}
         </div>
-        {/* Green, yellow, red rule of the national charter's brand block. */}
-        <div className="flex h-1" aria-hidden="true">
-          <span className="flex-1 bg-flag-green" />
-          <span className="flex-1 bg-flag-yellow" />
-          <span className="flex-1 bg-flag-red" />
-        </div>
+        {(!online || pending > 0) && (
+          <p className="flex items-center gap-2 bg-warn-light px-4 py-2 text-sm font-semibold text-warn" role="status">
+            <CloudOff className="h-4 w-4" aria-hidden="true" />
+            {online ? 'Envoi en cours' : 'Hors ligne : vos actions partiront au retour du réseau'}
+            {pending > 0 ? ` · ${pending} en attente` : ''}
+          </p>
+        )}
       </header>
       <main id="contenu" className={`page ${wide ? 'max-w-6xl' : ''}`}>
         {children}
       </main>
       {nav.length > 0 && (
         <nav
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-soil-line bg-surface/95 backdrop-blur lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-soil-line/70 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
           aria-label="Navigation principale mobile"
         >
           <ul className="mx-auto flex max-w-xl justify-around">
             {nav.map(([to, Icon, label]) => {
               const active = pathname === to;
               return (
-                <li key={to}>
+                <li key={to} className="flex-1">
                   <Link
                     to={to}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-0.5 px-2 text-xs font-semibold ${active ? 'text-leaf' : 'text-soil-muted'}`}
+                    className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[12px] font-semibold ${active ? 'text-leaf' : 'text-soil-muted'}`}
                   >
-                    <Icon className="h-6 w-6" aria-hidden="true" />
+                    <span className={`flex h-8 w-14 items-center justify-center rounded-full transition ${active ? 'bg-leaf-light' : ''}`}>
+                      <Icon className="h-[22px] w-[22px]" aria-hidden="true" strokeWidth={active ? 2.4 : 2} />
+                    </span>
                     {label}
                   </Link>
                 </li>
@@ -167,11 +175,11 @@ export function Stat({ label, value, hint, tone = 'neutral', Icon }) {
   const toneCls = { neutral: 'text-soil', good: 'text-leaf', warn: 'text-warn', bad: 'text-danger' }[tone];
   return (
     <div className="card flex flex-col gap-1 p-3">
-      <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-soil-muted">
+      <p className="flex items-center gap-1 text-[13px] font-medium text-soil-muted">
         {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}
         {label}
       </p>
-      <p className={`text-2xl font-black tabular-nums ${toneCls}`}>{value}</p>
+      <p className={`font-display text-2xl font-bold tabular-nums ${toneCls}`}>{value}</p>
       {hint && <p className="text-xs text-soil-muted">{hint}</p>}
     </div>
   );
@@ -275,7 +283,7 @@ export function AuthImage({ path, alt, className }) {
 }
 
 // WAI-ARIA radio group made of tiles: one stop in the tab order, arrows move and select.
-export function TileRadioGroup({ label, options, value, onChange, className, tileClass = 'min-h-24' }) {
+export function TileRadioGroup({ label, options, value, onChange, className, tileClass = '', variant = 'tile' }) {
   const refs = useRef({});
   const current = options.some((o) => o.id === value) ? value : options[0]?.id;
   const move = (e, index) => {
@@ -288,7 +296,7 @@ export function TileRadioGroup({ label, options, value, onChange, className, til
   };
   return (
     <div className={className} role="radiogroup" aria-label={label}>
-      {options.map(({ id, name, Icon, iconClass = 'h-8 w-8 text-leaf' }, index) => (
+      {options.map(({ id, name, picto }, index) => (
         <button
           key={id}
           ref={(el) => {
@@ -300,9 +308,9 @@ export function TileRadioGroup({ label, options, value, onChange, className, til
           tabIndex={current === id ? 0 : -1}
           onClick={() => onChange(id)}
           onKeyDown={(e) => move(e, index)}
-          className={`tile ${tileClass} ${value === id ? 'border-leaf bg-leaf-light' : ''}`}
+          className={`${variant === 'chip' ? 'chip' : `tile ${tileClass} ring-2 ${value === id ? 'ring-leaf bg-leaf-light' : 'ring-transparent'}`}`}
         >
-          <Icon className={iconClass} aria-hidden="true" />
+          <Picto name={picto} size={variant === 'chip' ? 26 : 44} />
           {name}
         </button>
       ))}
@@ -310,33 +318,46 @@ export function TileRadioGroup({ label, options, value, onChange, className, til
   );
 }
 
-export function CropPicker({ value, onChange, only }) {
+// Crops as a row of pictogram chips that scrolls sideways: the choice stays one thumb away.
+export function CropPicker({ value, onChange, only, layout = 'chips' }) {
   const list = only ? CROPS.filter((c) => only.includes(c.id)) : CROPS;
+  if (layout === 'grid')
+    return <TileRadioGroup label="Culture" options={list} value={value} onChange={onChange} className="grid grid-cols-3 gap-3" />;
   return (
-    <TileRadioGroup label="Culture" options={list} value={value} onChange={onChange} className="grid grid-cols-3 gap-2 sm:grid-cols-5" />
+    <TileRadioGroup
+      label="Culture"
+      options={list}
+      value={value}
+      onChange={onChange}
+      variant="chip"
+      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1"
+    />
   );
 }
 
 const TONE = {
-  good: 'border-status-calm bg-leaf-light text-leaf',
-  warn: 'border-status-check bg-warn-light text-warn',
-  bad: 'border-status-alert bg-danger-light text-danger',
-  neutral: 'border-soil-line bg-surface text-soil',
+  good: 'bg-leaf-light',
+  warn: 'bg-warn-light',
+  bad: 'bg-danger-light',
+  neutral: 'bg-surface',
 };
+const TONE_TITLE = { good: 'text-leaf', warn: 'text-warn', bad: 'text-danger', neutral: 'text-soil' };
+const TONE_PICTO = { good: 'ok', warn: 'sablier', bad: 'non', neutral: 'calendrier' };
 
-export function Verdict({ tone = 'neutral', title, text, Icon }) {
+// The answer a person came for: first on the screen, large, spoken aloud once.
+export function Verdict({ tone = 'neutral', title, text, picto }) {
   useEffect(() => {
     if (text) speak(`${title}. ${text}`);
   }, [title, text]);
   return (
-    <div className={`rounded-lg border-2 p-4 ${TONE[tone]}`} role="status" aria-live="polite">
-      <div className="flex items-center gap-3">
-        {Icon && <Icon className="h-10 w-10 shrink-0" aria-hidden="true" />}
-        <p className="text-2xl font-black">{title}</p>
+    <div className={`rounded-3xl p-5 shadow-card ${TONE[tone]}`} role="status" aria-live="polite">
+      <div className="flex items-center gap-4">
+        <Picto name={picto ?? TONE_PICTO[tone]} size={56} />
+        <p className={`font-display text-[24px] font-bold leading-tight ${TONE_TITLE[tone]}`}>{title}</p>
       </div>
-      {text && <p className="mt-2 text-base font-medium text-soil">{text}</p>}
+      {text && <p className="mt-3 text-[16px] leading-relaxed text-soil">{text}</p>}
       {text && (
-        <div className="mt-3">
+        <div className="mt-4">
           <SpeakButton text={`${title}. ${text}`} label="Réécouter" />
         </div>
       )}
@@ -364,7 +385,7 @@ export function Qr({ value, size = 180, label }) {
 export function ErrorNote({ error }) {
   if (!error) return null;
   return (
-    <p className="mt-3 rounded-lg bg-danger-light p-3 font-semibold text-danger" role="alert">
+    <p className="mt-3 rounded-2xl bg-danger-light p-4 font-semibold text-danger" role="alert">
       {error}
     </p>
   );

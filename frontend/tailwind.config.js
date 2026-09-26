@@ -13,8 +13,16 @@ export default {
         flag: { green: token('flag-green'), yellow: token('flag-yellow'), red: token('flag-red') },
         status: { calm: token('status-calm'), check: token('status-check'), alert: token('status-alert') },
       },
-      fontFamily: { sans: ['Montserrat', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'] },
-      boxShadow: { card: '0 1px 2px rgb(0 0 0 / 0.06)' },
+      // Body text in the phone's own face (Roboto on the Android phones most used in Benin): sharp, nothing to download.
+      // Titles in Montserrat, the typeface of the government charter.
+      fontFamily: {
+        sans: ['system-ui', 'Roboto', '-apple-system', 'Segoe UI', 'Noto Sans', 'sans-serif'],
+        display: ['Montserrat', 'system-ui', 'Roboto', 'sans-serif'],
+      },
+      boxShadow: {
+        card: '0 1px 2px rgb(38 33 26 / 0.05), 0 4px 16px rgb(38 33 26 / 0.06)',
+        lift: '0 2px 4px rgb(38 33 26 / 0.06), 0 10px 28px rgb(38 33 26 / 0.10)',
+      },
     },
   },
   plugins: [],

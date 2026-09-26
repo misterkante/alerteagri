@@ -89,41 +89,62 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 body {
-  @apply bg-soil-light text-soil antialiased;
+  @apply bg-soil-light font-sans text-[16px] leading-normal text-soil antialiased;
+}
+h1,
+h2,
+h3 {
+  @apply font-display tracking-tight;
 }
 
 @layer components {
   .page {
-    @apply mx-auto w-full max-w-5xl px-4 pb-28 pt-4;
+    @apply mx-auto w-full max-w-5xl px-4 pb-28 pt-3;
   }
+  /* Surfaces lift with a soft shadow instead of a border; dark mode, where shadows vanish, gets a hairline. */
   .card {
-    @apply rounded-xl border border-soil-line bg-surface p-4 shadow-card;
+    @apply rounded-2xl bg-surface p-4 shadow-card;
   }
   .btn {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-[16px] font-semibold transition active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40 disabled:cursor-not-allowed disabled:bg-soil-line disabled:text-soil-muted disabled:shadow-none disabled:active:scale-100;
   }
   .btn-primary {
-    @apply btn bg-leaf-mid text-leaf-ink hover:bg-leaf-mid/90;
+    @apply btn bg-leaf-mid text-leaf-ink shadow-card hover:bg-leaf-mid/90;
   }
   .btn-ghost {
-    @apply btn border border-soil-line bg-surface text-soil hover:bg-surface-raised;
+    @apply btn bg-surface text-soil shadow-card hover:bg-surface-raised;
   }
   .btn-danger {
     @apply btn bg-status-alert text-white hover:bg-status-alert/90;
   }
+  .icon-btn {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-soil transition hover:bg-surface-raised focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40;
+  }
   .input {
-    @apply min-h-12 w-full rounded-xl border border-soil-line bg-surface px-3 text-base text-soil placeholder:text-soil-muted focus:outline-none focus:ring-4 focus:ring-leaf/30;
+    @apply min-h-[52px] w-full rounded-2xl border-2 border-transparent bg-surface px-4 text-[16px] text-soil shadow-card placeholder:text-soil-muted focus:border-leaf focus:outline-none;
   }
   .label {
-    @apply mb-1 block text-sm font-semibold text-soil;
+    @apply mb-1.5 block text-[15px] font-semibold text-soil;
   }
+  /* Action tile: pictogram on top, label below, left aligned like a phone's shortcuts. */
   .tile {
-    @apply flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 border-soil-line bg-surface p-3 text-center text-base font-bold text-soil shadow-card transition-colors hover:border-leaf focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40;
+    @apply flex min-h-[112px] flex-col items-start justify-between gap-3 rounded-2xl bg-surface p-4 text-left text-[15px] font-semibold leading-snug text-soil shadow-card transition active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40;
+  }
+  .chip {
+    @apply inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full bg-surface px-4 text-[15px] font-medium text-soil shadow-card transition focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40;
+  }
+  .chip[aria-checked='true'],
+  .chip[aria-pressed='true'] {
+    @apply bg-leaf-mid text-leaf-ink;
+  }
+  .row {
+    @apply flex min-h-[64px] items-center gap-3 px-4 py-3;
   }
   .badge {
-    @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
   .demo {
     @apply badge bg-warn-light text-warn;
@@ -132,15 +153,35 @@ body {
     @apply text-soil-muted;
   }
   .section-title {
-    @apply mb-2 mt-6 text-lg font-bold;
+    @apply mb-3 mt-7 text-[17px] font-semibold;
   }
   .table {
     @apply w-full text-sm;
   }
   .table th {
-    @apply border-b border-soil-line px-2 py-2 text-left text-xs font-bold uppercase tracking-wide text-soil-muted;
+    @apply border-b border-soil-line px-2 py-2 text-left text-xs font-semibold text-soil-muted;
   }
   .table td {
     @apply border-b border-soil-line/60 px-2 py-2 align-top;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .card,
+  .tile,
+  .chip,
+  .btn-ghost,
+  .input {
+    box-shadow: none;
+    border: 1px solid rgb(var(--line));
+  }
+  .input:focus {
+    border-color: rgb(var(--leaf));
   }
 }

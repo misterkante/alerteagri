@@ -180,7 +180,7 @@ test.describe('F-12 / F-13 public verification', () => {
   test('a lot page shows its origin and never a phone number', async ({ page }) => {
     await page.goto('/lot/LOT-DEMO0001');
     await expect(page.getByText('LOT-DEMO0001').first()).toBeVisible();
-    await expect(page.locator('body')).not.toContainText(/\+229\d{8}/);
+    await expect(page.locator('body')).not.toContainText(/\+229/);
   });
 });
 

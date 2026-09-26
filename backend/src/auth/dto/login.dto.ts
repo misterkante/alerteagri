@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Matches } from 'class-validator';
+import { BeninPhone } from '../../common/decorators/benin-phone.decorator';
 
 export class LoginDto {
-  @ApiProperty({ example: '+22997000000' })
-  @IsString()
+  @BeninPhone()
   phone!: string;
 
   @ApiProperty({ example: '1234' })

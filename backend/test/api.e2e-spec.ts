@@ -27,7 +27,7 @@ process.env.VOICE_LIMIT_PER_MIN = '8';
 process.env.SEED_STAFF_PIN = '4821';
 
 const uid = () => randomBytes(6).toString('hex');
-const phone = () => `+2299${Math.floor(1e7 + Math.random() * 8.9e7)}`;
+const phone = () => `+22901${Math.floor(1e7 + Math.random() * 8.9e7)}`;
 
 describe('AlerteAgri API (e2e, real database)', () => {
   let app: INestApplication;
@@ -50,13 +50,13 @@ describe('AlerteAgri API (e2e, real database)', () => {
     app = configure(mod.createNestApplication());
     await app.init();
     prisma = app.get(PrismaService);
-    tokens.admin = await login('+22990000001', '4821');
-    tokens.agent = await login('+22990000002', '4821');
-    tokens.commune = await login('+22990000003', '4821');
-    tokens.advisor = await login('+22990000004', '4821');
-    tokens.producer = await login('+22997000001', '1234');
-    tokens.otherProducer = await login('+22997000004', '1234');
-    tokens.buyer = await login('+22996000001', '1234');
+    tokens.admin = await login('+2290190000001', '4821');
+    tokens.agent = await login('+2290190000002', '4821');
+    tokens.commune = await login('+2290190000003', '4821');
+    tokens.advisor = await login('+2290190000004', '4821');
+    tokens.producer = await login('+2290197000001', '1234');
+    tokens.otherProducer = await login('+2290197000004', '1234');
+    tokens.buyer = await login('+2290196000001', '1234');
   }, 120000);
 
   afterAll(() => app.close());
@@ -108,7 +108,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('AC4 a producer cannot act for another producer', async () => {
       const other = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000002' },
+        where: { phone: '+2290197000002' },
       });
       await http()
         .post('/reports')
@@ -123,7 +123,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('AC3 an advisor acts for a producer of the commune, traced in the audit log', async () => {
       const awa = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000001' },
+        where: { phone: '+2290197000001' },
       });
       const res = await http()
         .post('/reports')
@@ -144,7 +144,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('AC3 an advisor cannot act for a producer of another commune', async () => {
       const kossi = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000004' },
+        where: { phone: '+2290197000004' },
       });
       await http()
         .post('/reports')
@@ -176,6 +176,42 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
   });
 
+  describe('10-digit Beninese numbers (since 1 January 2025)', () => {
+    it('a producer signs in with the number as people write it today', async () => {
+      for (const phone of [
+        '01 97 00 00 04',
+        '0197000004',
+        '+229 01 97 00 00 04',
+      ])
+        await http()
+          .post('/auth/login')
+          .send({ phone, pin: '1234' })
+          .expect(201);
+    });
+    it('a malformed number gets a clear message, not "wrong PIN"', async () => {
+      const r = await http()
+        .post('/auth/login')
+        .send({ phone: '02 97 00 00 04', pin: '1234' })
+        .expect(400);
+      expect(JSON.stringify(r.body.message)).toContain('10 chiffres');
+    });
+    it('an advisor enrolment stores the official form, and a second spelling is a duplicate', async () => {
+      const n = String(Math.floor(1e7 + Math.random() * 8.9e7));
+      const local = `01 ${n.slice(0, 2)} ${n.slice(2, 4)} ${n.slice(4, 6)} ${n.slice(6)}`;
+      const r = await http()
+        .post('/users/producers')
+        .set(as('advisor'))
+        .send({ phone: local, name: 'Koffi Test', pin: '4321' })
+        .expect(201);
+      expect(r.body.phone).toBe(`+22901${n}`);
+      await http()
+        .post('/users/producers')
+        .set(as('advisor'))
+        .send({ phone: `+22901${n}`, name: 'Koffi Test', pin: '4321' })
+        .expect(409);
+    });
+  });
+
   describe('security: PIN brute force', () => {
     it('login attempts are limited per minute', async () => {
       const codes: number[] = [];
@@ -184,7 +220,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
           (
             await http()
               .post('/auth/login')
-              .send({ phone: '+22997000003', pin: '0000' })
+              .send({ phone: '+2290197000003', pin: '0000' })
           ).status,
         );
       expect(codes).toContain(429);
@@ -192,7 +228,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
       // KI-020: the lock is on that account, not on everyone behind the same address.
       await http()
         .post('/auth/login')
-        .send({ phone: '+22997000004', pin: '1234' })
+        .send({ phone: '+2290197000004', pin: '1234' })
         .expect(201);
     });
   });
@@ -267,7 +303,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
       expect(created).toHaveLength(1);
       expect(created[0].message).toMatch(/72 mm/);
       const kossi = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000004' },
+        where: { phone: '+2290197000004' },
       });
       const n = await prisma.notification.findUniqueOrThrow({
         where: { alertId_userId: { alertId: created[0].id, userId: kossi.id } },
@@ -276,7 +312,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('AC2 a producer acknowledges their own message but not someone else’s', async () => {
       const kossi = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000004' },
+        where: { phone: '+2290197000004' },
       });
       const n = await prisma.notification.findFirstOrThrow({
         where: { userId: kossi.id },
@@ -331,7 +367,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
       const calls: string[] = [];
       provider.send = async (phone: string) => {
         calls.push(phone);
-        if (phone === '+22997000003') throw new Error('réseau opérateur');
+        if (phone === '+2290197000003') throw new Error('réseau opérateur');
       };
       const rule = await prisma.alertRule.findUniqueOrThrow({
         where: { id: 'chaleur' },
@@ -349,7 +385,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
         },
       });
       const rose = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000003' },
+        where: { phone: '+2290197000003' },
       });
       const other = await http()
         .post('/auth/register')
@@ -367,7 +403,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
         where: { alertId_userId: { alertId: alert.id, userId: rose.id } },
       });
       expect(failed).toMatchObject({ status: 'FAILED', attempts: 3 });
-      expect(calls.filter((c) => c === '+22997000003')).toHaveLength(3);
+      expect(calls.filter((c) => c === '+2290197000003')).toHaveLength(3);
       const ok = await prisma.notification.findUniqueOrThrow({
         where: {
           alertId_userId: { alertId: alert.id, userId: other.body.user.id },
@@ -863,7 +899,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
   describe('F-10 USSD', () => {
     const ussd = (
       text: string,
-      p = '+22997000001',
+      p = '+2290197000001',
       secret = 'test-ussd-secret',
     ) =>
       http()
@@ -873,9 +909,9 @@ describe('AlerteAgri API (e2e, real database)', () => {
     it('AC4 a request without the gateway secret is refused', async () => {
       await http()
         .post('/ussd')
-        .send({ sessionId: uid(), phoneNumber: '+22997000001', text: '' })
+        .send({ sessionId: uid(), phoneNumber: '+2290197000001', text: '' })
         .expect(401);
-      await ussd('', '+22997000001', 'wrong-secret-xxx').expect(401);
+      await ussd('', '+2290197000001', 'wrong-secret-xxx').expect(401);
     });
     it('AC1 home menu fits the USSD limit', async () => {
       const r = await ussd('').expect(200);
@@ -892,7 +928,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('AC3 invalid choice returns a menu, unknown number is told to enrol', async () => {
       expect((await ussd('9').expect(200)).text).toMatch(/^CON Choix invalide/);
-      expect((await ussd('', '+22911111111').expect(200)).text).toMatch(
+      expect((await ussd('', '+2290111111111').expect(200)).text).toMatch(
         /^END Numéro inconnu/,
       );
     });
@@ -906,7 +942,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
       await http()
         .post('/ussd/simulate')
         .set(as('producer'))
-        .send({ sessionId: uid(), text: '', phoneNumber: '+22997000004' })
+        .send({ sessionId: uid(), text: '', phoneNumber: '+2290197000004' })
         .expect(400);
     });
   });
@@ -1124,14 +1160,14 @@ describe('AlerteAgri API (e2e, real database)', () => {
       const r = await http()
         .post('/ussd')
         .set('x-ussd-secret', 'test-ussd-secret')
-        .send({ sessionId: uid(), phoneNumber: '+22997000001', text: '5' })
+        .send({ sessionId: uid(), phoneNumber: '+2290197000001', text: '5' })
         .expect(200);
       expect(r.text).toMatch(/^CON /);
     });
 
     it('F-18 AC1-2 water balance of a parcel with and without weather data', async () => {
       const p = await prisma.parcel.findFirstOrThrow({
-        where: { sownAt: { not: null }, owner: { phone: '+22997000001' } },
+        where: { sownAt: { not: null }, owner: { phone: '+2290197000001' } },
         orderBy: { createdAt: 'desc' },
       });
       const r = await http()
@@ -1146,7 +1182,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
         data: {
           ownerId: (
             await prisma.user.findUniqueOrThrow({
-              where: { phone: '+22997000001' },
+              where: { phone: '+2290197000001' },
             })
           ).id,
           communeId: 'kalale',
@@ -1191,7 +1227,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
       expect(p1.body.notified).toBeGreaterThanOrEqual(1);
       expect(p2.body.notified).toBe(0);
       const awa = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000001' },
+        where: { phone: '+2290197000001' },
       });
       expect(
         await prisma.notification.count({
@@ -1242,7 +1278,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
         await prisma.listingShare.count({ where: { listingId: g.body.id } }),
       ).toBe(2);
       const kossi = await prisma.user.findUniqueOrThrow({
-        where: { phone: '+22997000004' },
+        where: { phone: '+2290197000004' },
       });
       await http()
         .post('/market/group-listings')
@@ -1474,7 +1510,7 @@ describe('AlerteAgri API (e2e, real database)', () => {
           (
             await http()
               .post('/auth/login')
-              .send({ phone: `+229970${String(10000 + i)}`, pin: '1234' })
+              .send({ phone: `+22901970${String(10000 + i)}`, pin: '1234' })
           ).status,
         );
       expect(codes).toContain(429);

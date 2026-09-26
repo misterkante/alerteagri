@@ -1,11 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { IsIn, IsString, Length, Matches } from 'class-validator';
+import { BeninPhone } from '../../common/decorators/benin-phone.decorator';
 
 export class RegisterDto {
-  @ApiProperty({ example: '+22997000000' })
-  @IsString()
-  @Matches(/^\+?[0-9]{8,15}$/, { message: 'Numero de telephone invalide' })
+  @BeninPhone()
   phone!: string;
 
   @ApiProperty({ example: 'Awa Dossou' })

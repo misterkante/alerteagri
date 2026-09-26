@@ -1,8 +1,8 @@
 import { IsString, Length, Matches } from 'class-validator';
+import { BeninPhone } from '../../common/decorators/benin-phone.decorator';
 
 export class CreateProducerDto {
-  @IsString()
-  @Matches(/^\+?[0-9]{8,15}$/, { message: 'Numéro de téléphone invalide' })
+  @BeninPhone()
   phone!: string;
   @IsString() @Length(2, 80) name!: string;
   @IsString()

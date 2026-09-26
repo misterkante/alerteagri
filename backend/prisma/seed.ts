@@ -288,63 +288,63 @@ async function main() {
     pinHash: string;
   }[] = [
     {
-      phone: '+22990000001',
+      phone: '+2290190000001',
       name: 'Administrateur AlerteAgri',
       role: 'ADMIN',
       communeId: 'cotonou',
       pinHash: staffHash,
     },
     {
-      phone: '+22990000002',
+      phone: '+2290190000002',
       name: 'Agent ATDA Pôle 4',
       role: 'AGENT',
       communeId: 'parakou',
       pinHash: staffHash,
     },
     {
-      phone: '+22990000003',
+      phone: '+2290190000003',
       name: 'Mairie de Parakou (TDL)',
       role: 'COMMUNE',
       communeId: 'parakou',
       pinHash: staffHash,
     },
     {
-      phone: '+22990000004',
+      phone: '+2290190000004',
       name: 'Conseillère Parakou',
       role: 'ADVISOR',
       communeId: 'parakou',
       pinHash: staffHash,
     },
     {
-      phone: '+22997000001',
+      phone: '+2290197000001',
       name: 'Awa Dossou',
       role: 'PRODUCER',
       communeId: 'parakou',
       pinHash: producerPin,
     },
     {
-      phone: '+22997000002',
+      phone: '+2290197000002',
       name: 'Issa Bio',
       role: 'PRODUCER',
       communeId: 'n-dali',
       pinHash: producerPin,
     },
     {
-      phone: '+22997000003',
+      phone: '+2290197000003',
       name: 'Rose Sabi',
       role: 'PRODUCER',
       communeId: 'tchaourou',
       pinHash: producerPin,
     },
     {
-      phone: '+22997000004',
+      phone: '+2290197000004',
       name: 'Kossi Houngbo',
       role: 'PRODUCER',
       communeId: 'bohicon',
       pinHash: producerPin,
     },
     {
-      phone: '+22996000001',
+      phone: '+2290196000001',
       name: 'Coopérative d’achat Borgou',
       role: 'BUYER',
       communeId: 'parakou',
@@ -403,12 +403,12 @@ async function main() {
     const byPhone = async (phone: string) =>
       (await prisma.user.findUniqueOrThrow({ where: { phone } })).id;
     const demoParcels: [string, string, string, number, number, number][] = [
-      ['+22997000001', 'parakou', 'mais', 2.5, 9.352, 2.611],
-      ['+22997000001', 'parakou', 'soja', 2, 9.341, 2.655],
-      ['+22997000002', 'n-dali', 'mais', 3, 9.871, 2.705],
-      ['+22997000003', 'tchaourou', 'soja', 4, 8.893, 2.61],
-      ['+22997000003', 'tchaourou', 'anacarde', 5, 8.9, 2.585],
-      ['+22997000004', 'bohicon', 'mais', 1.5, 7.18, 2.07],
+      ['+2290197000001', 'parakou', 'mais', 2.5, 9.352, 2.611],
+      ['+2290197000001', 'parakou', 'soja', 2, 9.341, 2.655],
+      ['+2290197000002', 'n-dali', 'mais', 3, 9.871, 2.705],
+      ['+2290197000003', 'tchaourou', 'soja', 4, 8.893, 2.61],
+      ['+2290197000003', 'tchaourou', 'anacarde', 5, 8.9, 2.585],
+      ['+2290197000004', 'bohicon', 'mais', 1.5, 7.18, 2.07],
     ];
     for (const [phone, communeId, cropId, areaHa, lat, lon] of demoParcels) {
       await prisma.parcel.create({
@@ -439,14 +439,14 @@ async function main() {
   // Demo offers from the demo producers, near the reference prices, so the market is never empty.
   // Fixed clientIds keep the seed idempotent: a sold or withdrawn offer is never reopened.
   const demoListings: [string, string, number, number][] = [
-    ['+22997000001', 'mais', 800, 215],
-    ['+22997000001', 'soja', 600, 325],
-    ['+22997000002', 'mais', 1200, 205],
-    ['+22997000003', 'niebe', 300, 470],
-    ['+22997000003', 'soja', 1000, 315],
-    ['+22997000004', 'mais', 400, 235],
-    ['+22997000004', 'manioc', 900, 95],
-    ['+22997000004', 'tomate', 250, 340],
+    ['+2290197000001', 'mais', 800, 215],
+    ['+2290197000001', 'soja', 600, 325],
+    ['+2290197000002', 'mais', 1200, 205],
+    ['+2290197000003', 'niebe', 300, 470],
+    ['+2290197000003', 'soja', 1000, 315],
+    ['+2290197000004', 'mais', 400, 235],
+    ['+2290197000004', 'manioc', 900, 95],
+    ['+2290197000004', 'tomate', 250, 340],
   ];
   for (const [
     i,

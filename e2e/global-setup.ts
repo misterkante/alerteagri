@@ -8,11 +8,11 @@ export const STATE_DIR = join(__dirname, '.auth');
 // Seeded accounts (backend/prisma/seed.ts). Producers share the public demo PIN;
 // staff use SEED_STAFF_PIN, read from the environment or backend/.env, never from the repo.
 export const ACCOUNTS = {
-  producer: { phone: '+22997000001', staff: false },
-  buyer: { phone: '+22996000001', staff: false },
-  agent: { phone: '+22990000002', staff: true },
-  commune: { phone: '+22990000003', staff: true },
-  advisor: { phone: '+22990000004', staff: true },
+  producer: { phone: '+2290197000001', staff: false },
+  buyer: { phone: '+2290196000001', staff: false },
+  agent: { phone: '+2290190000002', staff: true },
+  commune: { phone: '+2290190000003', staff: true },
+  advisor: { phone: '+2290190000004', staff: true },
 } as const;
 export type Role = keyof typeof ACCOUNTS;
 

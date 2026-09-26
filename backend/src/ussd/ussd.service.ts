@@ -4,6 +4,7 @@ import { ReportsService } from '../reports/reports.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdviceService } from '../advice/advice.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { toBeninPhone } from '../domain/phone';
 import { menu, USSD_MAX } from './ussd.constants';
 
 const CROPS: [string, string][] = [
@@ -40,7 +41,10 @@ export class UssdService {
   ) {}
 
   async handle(sessionId: string, phone: string, text = ''): Promise<string> {
-    const user = await this.prisma.user.findUnique({ where: { phone } });
+    // Aggregators send numbers in their own format; a malformed one simply finds no account.
+    const user = await this.prisma.user.findUnique({
+      where: { phone: toBeninPhone(phone) ?? phone },
+    });
     if (!user)
       return end(
         'Numéro inconnu. Demandez à votre conseiller agricole de vous inscrire.',

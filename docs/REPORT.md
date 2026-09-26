@@ -7,11 +7,13 @@
 | | |
 |---|---|
 | Features | F-01 à F-24 livrées : 15 du périmètre initial et 9 de la V2 (F-16 à F-24) ; F-23 et F-24 sont des simulations assumées (KI-016, KI-017) |
-| Tests | 67 tests des règles métier et 53 tests de bout en bout sur une vraie base PostgreSQL, tous verts (120) |
+| Tests | 75 tests des règles métier, 54 tests de bout en bout de l'API sur une vraie base PostgreSQL, 170 tests navigateur (Playwright) : 26 parcours et 144 audits d'accessibilité ; tous verts |
+| Accessibilité | axe, WCAG 2.1 A et AA : 0 violation sur 18 écrans et 5 rôles, à 360 px et sur ordinateur, en clair et en sombre ; onglets et choix utilisables au clavier (motifs WAI-ARIA), sous-titres sur les fiches audio |
+| Qualité continue | hooks Husky (pre-commit, commit-msg, pre-push) et CI GitHub Actions en trois jobs ; TypeScript strict ; ESLint à 0 avertissement sur les deux applications |
 | Mutation (règles métier) | 557 mutants détectés sur 573 (97 %), après renforcement des tests V2 (80 % au premier passage) |
 | Failles réintroduites volontairement | 13 sur 13 détectées (V1 : escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN ; V2 : photo visible par tous, regroupement hors commune, rappel envoyé deux fois, rapprochement non limité à la commune, règle notifiée deux fois) ; 4 tests trop faibles révélés puis corrigés |
 | Documentation vérifiée contre le code | `docs_check` : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
-| Problèmes connus ouverts | 5 high, 5 medium, 4 low ; 1 corrigé (KI-008) |
+| Problèmes connus | 21 inscrits ; ouverts : 3 high, 7 medium, 8 low ; corrigés : KI-008, KI-011, KI-012 |
 | Pentest | API en production testée le 2026-09-26 (`docs/security/pentest-2026-09-26.md`) : aucune faille exploitable ; injections et fichier piégé bloqués en amont par le pare-feu de l'hébergeur, donc non testés côté application en ligne mais couverts en e2e |
 
 ## Critères d'acceptation
@@ -64,13 +66,25 @@ Statut : **verified** = prouvé par un test exécuté ; **partial** = une partie
   - le lot de démonstration dépendait des parcelles existantes ;
   - `docs_check` ignorait tout package nommé `reports` (bug corrigé dans l'outil Forge lui-même).
 
+## Qualité du code et accessibilité
+
+Mise en place après une revue qui a relevé des erreurs de build et de lint laissées passer. Chaque barrière a été vue en échec avant d'être déclarée active.
+
+- **TypeScript strict** sur l'API (KI-011 corrigé) : 0 erreur. ESLint interdit `any`, les promesses non attendues et l'égalité faible ; le seed a été corrigé en conséquence.
+- **Interface** : ESLint 9 avec `jsx-a11y` strict et les règles des hooks React. Corrigés : des chargements qui modifiaient l'état pendant le rendu ou sans annulation (quatre écrans), un `Date.now()` pendant le rendu, un `autoFocus` au chargement de page (remplacé par un focus quand le menu USSD arrive), un lecteur audio sans sous-titres (route `GET /contents/:id/captions.vtt`, WebVTT, test métier et e2e).
+- **Hooks** : `pre-commit` refuse un fichier non formaté, un avertissement de lint ou un secret ; `commit-msg` refuse un message hors convention et toute mention d'un assistant comme co-auteur (vérifié sur 5 messages : 1 accepté, 4 refusés) ; `pre-push` rejoue lint, types, tests métier et build (17 s).
+- **CI** : `static` (lint, types, tests métier, builds, messages de commit, recherche de secrets), `api-e2e` (migrations sur base vide, écart schéma et migrations, e2e), `web-e2e` (Playwright et axe, rapport en artefact).
+- **Ce que les tests navigateur ont trouvé**, tous corrigés : un texte sous le contraste minimal ; un tableau défilant inaccessible au clavier ; l'écran des recettes qui renvoyait une erreur 500 masquée par l'interface, parce que `RECEIPT_SECRET` manquait ; l'API vérifie désormais au démarrage que ses secrets sont présents et refuse de démarrer sinon ; un producteur qui ouvrait l'écran des recettes déclenchait des appels refusés au lieu d'un message clair ; un tableau de bord sans session réduit à un bouton sans explication ; des onglets et des choix en tuiles sans navigation aux flèches.
+- **Mutation sur le nouveau module de sous-titres** : 90 % au premier passage ; deux tests manquants ajoutés, et une faiblesse trouvée au passage : `toEqual` ignore les éléments `undefined` d'un tableau, donc les 17 comparaisons de tableaux de l'API et des tests navigateur utilisent maintenant `toStrictEqual`. Résultat : 96,7 %, le seul mutant restant est équivalent (le texte est déjà nettoyé des espaces).
+- **Preuve que les nouveaux tests échouent** : clavier des onglets retiré, contrôle de rôle des recettes retiré, les deux tests correspondants passent au rouge ; code rétabli ensuite.
+
 ## Base de données
 
 Schéma initial `20260926051316_init` (20 tables). Phase : pré-production. Une décision de modèle a été révisée pendant la livraison : le voisinage d'alerte (SPEC Q-01).
 
 ## Documentation
 
-`docs/architecture/` : carte des 16 packages, diagrammes de classes (domain, alerts, reports, ussd, tax) et de séquence (boucle ravageur, USSD, reçu TDL), vérifiés par `docs_check`. `docs/KNOWN_ISSUES.md` : 15 entrées.
+`docs/architecture/` : carte des 16 packages, diagrammes de classes (domain, alerts, reports, ussd, tax) et de séquence (boucle ravageur, USSD, reçu TDL), vérifiés par `docs_check`. `docs/KNOWN_ISSUES.md` : 21 entrées.
 
 ## Reste à faire
 

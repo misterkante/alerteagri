@@ -57,7 +57,7 @@ Ce qui est simulé est marqué « démo » dans l'interface : l'envoi réel des 
 | Document | Contenu |
 |---|---|
 | [`docs/CAHIER_DES_CHARGES.md`](docs/CAHIER_DES_CHARGES.md) | vision, acteurs, exigences, architecture, feuille de route |
-| [`docs/SPEC.md`](docs/SPEC.md) | 15 features et leurs critères d'acceptation |
+| [`docs/SPEC.md`](docs/SPEC.md) | 24 features et leurs critères d'acceptation |
 | [`docs/JUSTIFICATION_RECHERCHE.md`](docs/JUSTIFICATION_RECHERCHE.md) | la recherche derrière chaque décision |
 | [`docs/CONTEXTE_POLITIQUE.md`](docs/CONTEXTE_POLITIQUE.md) | alignement avec le programme 2026-2033 |
 | [`docs/architecture/`](docs/architecture/) | packages, diagrammes de classes et de séquence |
@@ -69,6 +69,7 @@ Ce qui est simulé est marqué « démo » dans l'interface : l'envoi réel des 
 Prérequis : Node 20, Docker.
 
 ```bash
+npm ci                                 # à la racine : hooks git et tests navigateur
 docker run -d --name alerteagri-db -e POSTGRES_USER=alerteagri -e POSTGRES_PASSWORD=alerteagri \
   -e POSTGRES_DB=alerteagri -p 5437:5432 postgres:16-alpine
 
@@ -84,13 +85,28 @@ npm ci
 npm run dev                            # http://localhost:5173
 ```
 
-Tests :
+## Qualité
+
+Rien n'entre dans le dépôt sans passer trois barrières, et chacune refait le travail de la précédente.
+
+| Barrière | Ce qui est vérifié |
+|---|---|
+| `pre-commit` (Husky, lint-staged) | fichiers indexés formatés par Prettier, ESLint sans aucun avertissement, aucun secret (fichier `.env`, clé privée, URL de base avec mot de passe, jeton) |
+| `commit-msg` (commitlint) | Conventional Commits en anglais, en minuscules ; toute mention d'un assistant comme co-auteur est refusée |
+| `pre-push` | lint des deux applications, TypeScript strict (API et tests navigateur), tests métier, format du frontend, build de production |
+| CI GitHub Actions (`.github/workflows/ci.yml`) | tout ce qui précède, plus : migrations appliquées sur une base vide et comparées au schéma, tests de bout en bout de l'API sur PostgreSQL, parcours et accessibilité dans Chromium avec rapport Playwright en artefact |
+
+Règles de lint notables : TypeScript `strict`, promesses non attendues interdites, `any` interdit, égalité stricte ; côté interface, `jsx-a11y` en mode strict et les règles des hooks React.
 
 ```bash
-cd backend
-npx jest src                           # règles métier
-npm run test:e2e                       # API complète sur la vraie base
+npm run lint                           # les deux applications, 0 avertissement
+npm run typecheck                      # API et tests navigateur
+npm test                               # règles métier
+npm run test:e2e:api                   # API complète sur la vraie base
+npm run test:e2e:web                   # parcours et accessibilité (Playwright + axe)
 ```
+
+Les tests navigateur démarrent eux-mêmes l'API et le build de production de l'interface. Ils passent l'audit axe WCAG 2.1 A et AA sur 18 écrans et 5 rôles, à 360 px et sur ordinateur, en thème clair et sombre, et échouent sur toute erreur de script ou toute réponse 5xx de l'API. Les parcours couvrent la connexion, le conseil de semis, le contrôle de pesticide, le signalement jusqu'à sa validation par l'agent, la file hors ligne, le téléphone USSD, la vérification publique d'un reçu et d'un lot, et la navigation au clavier des onglets et des choix. Sur une machine sans navigateur Playwright : `PW_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e:web`.
 
 Déploiement : l'API et sa base sur Render (`render.yaml`), l'interface sur Vercel (`frontend/vercel.json`, variable `VITE_API_URL`).
 

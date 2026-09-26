@@ -211,3 +211,20 @@ test.describe('F-08 local-language voices', () => {
     expect(await page.evaluate(() => (window as unknown as { spoken: number }).spoken)).toBe(0);
   });
 });
+
+test.describe('F-17 from advice to reminders', () => {
+  test.use(as('producer'));
+  test('a producer declares a sowing right under the advice, and finds the parcel sown on the home screen', async ({ page, context }) => {
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 9.34, longitude: 2.62 });
+    await page.goto('/semis');
+    await page.getByRole('radiogroup', { name: 'Culture' }).getByRole('radio', { name: 'Niébé' }).click();
+    await expect(page.getByRole('heading', { name: 'Vous avez semé ?' })).toBeVisible();
+    await page.getByLabel('Surface semée (hectares)').fill('1.5');
+    await page.getByRole('button', { name: 'J’ai semé : enregistrer ma parcelle' }).click();
+    await expect(page.getByText('Semis enregistré')).toBeVisible();
+    await page.getByRole('link', { name: 'Voir mon champ' }).click();
+    await expect(page).toHaveURL(/\/producteur$/);
+    await expect(page.getByText(/^Niébé · 1,5 ha$/).first()).toBeVisible();
+  });
+});

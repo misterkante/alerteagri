@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Gavel, MapPin, Pause, Play } from 'lucide-re
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
 import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, TileRadioGroup, Verdict } from '../ui';
 import { Picto } from '../picto';
+import { CROPS } from '../lib/crops';
 import { fmtDate, fmtDay, fmtLongDate, fmtNum, fmtPhone, fmtTime } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
@@ -442,7 +443,142 @@ const SOWING = {
   HORS_SAISON: ['neutral', 'calendrier', 'Hors saison'],
 };
 
+// "J'ai semé": closes the loop the advice opens. Dating the sowing starts the stage reminders and the water balance.
+function DeclareSowing({ cropId, cropName }) {
+  const [parcels, setParcels] = useState(null);
+  const [areaHa, setAreaHa] = useState('1');
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let alive = true;
+    api('/parcels/mine')
+      .then((list) => alive && setParcels(list))
+      .catch(() => alive && setParcels([]));
+    return () => {
+      alive = false;
+    };
+  }, [cropId]);
+  if (!parcels) return null;
+  const unsown = parcels.filter((p) => (p.cropId ?? p.crop?.id) === cropId && !p.sownAt);
+  const sownAt = new Date(`${date}T08:00:00Z`).toISOString();
+  const onExisting = async (parcel) => {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/parcels/${parcel.id}/sowing`, { method: 'POST', body: { sownAt } });
+      setDone(date);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const onNew = () => {
+    setBusy(true);
+    setError('');
+    if (!navigator.geolocation) {
+      setBusy(false);
+      setError('Ce téléphone ne donne pas sa position : demandez à votre conseiller de déclarer la parcelle.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await api('/parcels', {
+            method: 'POST',
+            body: { cropId, areaHa: Number(areaHa), lat: pos.coords.latitude, lon: pos.coords.longitude, sownAt },
+          });
+          setDone(date);
+        } catch (e) {
+          setError(e.message);
+        } finally {
+          setBusy(false);
+        }
+      },
+      () => {
+        setBusy(false);
+        setError('Position introuvable : activez la localisation du téléphone, ou demandez à votre conseiller.');
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  };
+  if (done)
+    return (
+      <section className="rounded-3xl bg-leaf-light p-5 shadow-card" role="status">
+        <div className="flex items-center gap-3">
+          <Picto name="ok" size={44} />
+          <p className="font-display text-[20px] font-bold text-leaf">Semis enregistré</p>
+        </div>
+        <p className="mt-2 text-[15px]">
+          {cropName} semé le {fmtDate(done)}. Vous recevrez un SMS à chaque étape : levée, sarclage, engrais, récolte.
+        </p>
+        <Link to="/producteur" className="btn-ghost mt-4 w-full">
+          Voir mon champ
+        </Link>
+      </section>
+    );
+  return (
+    <section className="card space-y-4" aria-labelledby="semis-declare">
+      <div className="flex items-center gap-3">
+        <Picto name="semis" size={40} />
+        <div>
+          <h2 id="semis-declare" className="text-[17px] font-semibold">
+            Vous avez semé ?
+          </h2>
+          <p className="text-[14px] text-soil-muted">Déclarez-le pour recevoir les rappels d’étapes par SMS et le suivi de l’eau.</p>
+        </div>
+      </div>
+      <div>
+        <label className="label" htmlFor="date-semis">
+          Date du semis
+        </label>
+        <input
+          id="date-semis"
+          type="date"
+          className="input"
+          value={date}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
+      {unsown.length > 0 ? (
+        unsown.map((p) => (
+          <button key={p.id} type="button" className="btn-primary w-full" disabled={busy} onClick={() => onExisting(p)}>
+            J’ai semé ma parcelle de {fmtNum(p.areaHa, p.areaHa % 1 ? 1 : 0)} ha
+          </button>
+        ))
+      ) : (
+        <>
+          <div>
+            <label className="label" htmlFor="surface">
+              Surface semée (hectares)
+            </label>
+            <input
+              id="surface"
+              type="number"
+              inputMode="decimal"
+              min="0.1"
+              step="0.1"
+              className="input"
+              value={areaHa}
+              onChange={(e) => setAreaHa(e.target.value)}
+            />
+          </div>
+          <button type="button" className="btn-primary w-full" disabled={busy || !(Number(areaHa) > 0)} onClick={onNew}>
+            {busy ? 'Recherche de votre position…' : 'J’ai semé : enregistrer ma parcelle'}
+          </button>
+          <p className="text-[13px] text-soil-muted">La position du téléphone situe la parcelle ; faites-le depuis le champ.</p>
+        </>
+      )}
+      <ErrorNote error={error} />
+    </section>
+  );
+}
+
 export function Sowing() {
+  const [session] = useSession();
   const { communes, communeId, setCommuneId } = useCommune();
   const [cropId, setCropId] = useState('mais');
   const [result, setResult] = useState(null);
@@ -472,6 +608,9 @@ export function Sowing() {
           only={['mais', 'soja', 'arachide', 'niebe', 'riz', 'sorgho', 'manioc', 'coton', 'tomate']}
         />
         {v && <Verdict tone={v[0]} picto={v[1]} title={v[2]} text={result.reason} />}
+        {session?.user.role === 'PRODUCER' && (
+          <DeclareSowing key={cropId} cropId={cropId} cropName={CROPS.find((c) => c.id === cropId)?.name ?? cropId} />
+        )}
         <ErrorNote error={error} />
         {result && <RainChart rain={result.rain} />}
         {result && (

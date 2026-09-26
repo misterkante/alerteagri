@@ -1,4 +1,7 @@
-import { Body, Controller, ForbiddenException, Get, Injectable, Module, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, MaxFileSizeValidator, Module, NotFoundException, Param, ParseFilePipe, Post, Query, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { sniffImage } from '../domain/exports';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsLatitude, IsLongitude, IsOptional, IsString, Length } from 'class-validator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -16,6 +19,8 @@ import { AlertsService } from '../alerts/alerts.service';
 export const SYMPTOMS = ['feuilles-trouees', 'chenilles', 'sciure-cornet', 'jaunissement', 'taches', 'fletrissement', 'insectes-piqueurs'] as const;
 export const PEST_CROPS = ['mais', 'sorgho', 'riz', 'niebe', 'soja', 'coton', 'arachide', 'manioc', 'tomate'];
 const FAW_SYMPTOMS = ['feuilles-trouees', 'chenilles', 'sciure-cornet'];
+
+export const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 
 export class CreateReportDto {
   @IsString() @Length(8, 64) clientId: string;
@@ -60,6 +65,22 @@ export class ReportsService {
     return { report: updated, alerts };
   }
 
+  async attachPhoto(actor: AuthenticatedUser, id: string, file: { buffer: Buffer; size: number }) {
+    const r = await this.prisma.pestReport.findUnique({ where: { id } });
+    if (!r || (r.reporterId !== actor.userId && r.actingForId !== actor.userId)) throw new NotFoundException('Signalement introuvable');
+    const mime = sniffImage(file.buffer);
+    if (!mime) throw new BadRequestException('Le fichier n’est pas une photo reconnue (JPEG, PNG ou WebP)');
+    await this.prisma.pestReport.update({ where: { id }, data: { photo: file.buffer, photoMime: mime } });
+    await this.audit.log(actor.userId, 'report.photo', 'PestReport', id, { bytes: file.size });
+    return { id, mime, bytes: file.size };
+  }
+
+  async photo(id: string) {
+    const r = await this.prisma.pestReport.findUnique({ where: { id }, select: { photo: true, photoMime: true } });
+    if (!r?.photo || !r.photoMime) throw new NotFoundException('Pas de photo');
+    return r;
+  }
+
   // Exact coordinates are only returned to staff; producers see the commune only.
   async list(viewer: AuthenticatedUser, communeId?: string) {
     const staff = ['AGENT', 'ADMIN', 'ADVISOR'].includes(viewer.role);
@@ -67,7 +88,10 @@ export class ReportsService {
       where: { communeId }, include: { commune: { select: { name: true } }, crop: { select: { name: true } } },
       orderBy: { createdAt: 'desc' }, take: 200,
     });
-    return reports.map((r) => (staff || r.reporterId === viewer.userId ? r : { ...r, lat: null, lon: null, reporterId: null, actingForId: null }));
+    return reports.map(({ photo, ...r }) => {
+      const out = { ...r, hasPhoto: !!photo };
+      return staff || r.reporterId === viewer.userId ? out : { ...out, lat: null, lon: null, reporterId: null, actingForId: null };
+    });
   }
 }
 
@@ -87,6 +111,22 @@ export class ReportsController {
   @Get()
   list(@CurrentUser() user: AuthenticatedUser, @Query('communeId') communeId?: string) {
     return this.reports.list(user, communeId);
+  }
+
+  @Post(':id/photo')
+  @Roles('PRODUCER', 'ADVISOR')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_PHOTO_BYTES } }))
+  photoUpload(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string,
+    @UploadedFile(new ParseFilePipe({ validators: [new MaxFileSizeValidator({ maxSize: MAX_PHOTO_BYTES })] })) file: { buffer: Buffer; size: number }) {
+    return this.reports.attachPhoto(user, id, file);
+  }
+
+  @Get(':id/photo')
+  @Roles('AGENT', 'ADMIN', 'ADVISOR')
+  async photo(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const r = await this.reports.photo(id);
+    res.set({ 'Content-Type': r.photoMime!, 'Cache-Control': 'private, max-age=3600' });
+    return new StreamableFile(r.photo!);
   }
 
   @Post(':id/validate')

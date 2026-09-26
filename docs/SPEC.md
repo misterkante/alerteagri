@@ -25,6 +25,15 @@ Ordre de construction = ordre du tableau. En cas de manque de temps, on coupe pa
 | F-13 | Lot traçable avec QR, de la parcelle au centre de collecte | F-01 | approved |
 | F-14 | Tableau de bord : carte, boucles, valeur protégée, offre face à la GDIZ, recettes | F-04, F-06, F-12, F-13 | approved |
 | F-15 | PWA hors ligne et budget de poids | toutes | approved |
+| F-16 | Photo jointe au signalement de ravageur | F-06 | approved |
+| F-17 | Suivi de parcelle : étapes culturales et rappels par SMS | F-04, F-13 | approved |
+| F-18 | Stress hydrique de la parcelle (bilan pluie moins ET0 depuis le semis) | F-02, F-17 | approved |
+| F-19 | Alerte réglementaire ciblée à la publication d'une règle | F-04, F-08 | approved |
+| F-20 | Vente groupée par une coopérative | F-11 | approved |
+| F-21 | Export compatible FAMEWS des signalements de chenille légionnaire | F-06 | approved |
+| F-22 | Rapprochement des recettes TDL (export et contrôle d'intégrité des reçus) | F-12 | approved |
+| F-23 | Connecteur vers le marché terminal SIPI-Bénin (export des lots, adaptateur simulé) | F-13 | approved |
+| F-24 | Indice de sécheresse pour une assurance indicielle (simulation) | F-02, F-17 | approved |
 
 ## Questions ouvertes
 
@@ -178,3 +187,41 @@ Acceptance :
   AC2 un signalement ou un accusé de réception fait hors ligne est mis en file puis envoyé au retour du réseau, sans doublon (`clientId`)
   AC3 première page sous 200 Ko transférés, zones tactiles de 48 px, contrastes AA, aucun débordement horizontal à 360 px
 Statut : approved
+
+## V2 réaliste (ajout du 2026-09-26, demandé par le porteur)
+
+### F-16 Photo du signalement
+  AC1 une photo facultative (JPEG, PNG ou WebP, validée par son contenu, 3 Mo maximum) s'attache à un signalement ; l'agent la voit avant de valider
+  AC2 (négatif) un fichier qui n'est pas une image est refusé ; un producteur ne voit pas la photo des autres
+
+### F-17 Suivi de parcelle
+  AC1 le conseiller ou le producteur déclare la date de semis d'une parcelle ; la plateforme calcule les étapes (levée, sarclage, fertilisation, récolte estimée) selon le cycle de la culture
+  AC2 l'exécution des rappels envoie une seule fois, par SMS, chaque étape arrivée à échéance
+  AC3 (négatif) une date de semis dans le futur ou de plus d'un an est refusée
+
+### F-18 Stress hydrique
+  AC1 pour une parcelle semée, bilan cumulé pluie moins ET0 depuis le semis, sur les données Open-Meteo de sa commune, avec un niveau (normal, surveiller, stress)
+  AC2 sans données météo sur la période, le niveau est « inconnu », jamais « normal »
+
+### F-19 Alerte réglementaire
+  AC1 publier une fiche de réglementation liée à des cultures notifie les producteurs qui ont une parcelle de ces cultures, une seule fois par fiche et par producteur
+  AC2 une fiche sans culture ciblée ne notifie personne
+
+### F-20 Vente groupée
+  AC1 un conseiller regroupe les quantités de plusieurs producteurs de sa commune en une offre unique ; chaque part reste attribuée à son producteur
+  AC2 (négatif) un producteur d'une autre commune ne peut pas être inclus ; les règles d'export s'appliquent au lot
+
+### F-21 Export FAMEWS
+  AC1 un agent exporte en CSV les signalements validés de chenille légionnaire (date, commune, coordonnées, culture, symptôme) sur une période
+  AC2 les champs suivent un format documenté ; aucune donnée personnelle du producteur
+
+### F-22 Rapprochement TDL
+  AC1 export CSV des paiements par commune et période ; contrôle de chaque signature ; le total et le nombre de reçus invalides sont affichés
+  AC2 une commune ne peut exporter que ses propres recettes
+
+### F-23 Connecteur SIPI
+  AC1 export JSON des lots (culture, poids, humidité, origine, date) au format proposé pour le marché terminal ; envoi via un adaptateur remplaçable, simulé et marqué comme tel
+
+### F-24 Indice de sécheresse
+  AC1 par commune, cumul de pluie de la saison comparé à l'évapotranspiration ; indice de 0 à 1 et montant indicatif qu'une assurance indicielle verserait par hectare, marqué « simulation »
+  AC2 l'indice est reproductible : mêmes données, même résultat

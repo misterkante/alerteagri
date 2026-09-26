@@ -5,7 +5,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ContentKind } from '@prisma/client';
-import { IsEnum, IsIn, IsOptional, IsString, Length } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsIn, IsOptional, IsString, Length } from 'class-validator';
+import { AlertsModule } from '../alerts/alerts.module';
+import { AlertsService } from '../alerts/alerts.service';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -39,6 +41,7 @@ class ContentDto {
   @IsString() @Length(10, 2000) body: string;
   @IsIn(PICTOGRAMS) pictogram: string;
   @IsOptional() @IsString() @Length(3, 300) officialRef?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(11) @IsIn(['mais', 'sorgho', 'riz', 'manioc', 'igname', 'arachide', 'niebe', 'soja', 'coton', 'anacarde', 'tomate'], { each: true }) targetCrops?: string[];
 }
 
 class InputDto {
@@ -50,7 +53,7 @@ class InputDto {
 
 @Injectable()
 export class ContentService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly alerts: AlertsService) {}
 
   published(kind?: ContentKind) {
     return this.prisma.content.findMany({
@@ -87,7 +90,12 @@ export class ContentService {
     const c = await this.prisma.content.update({ where: { id }, data: { status } }).catch(() => null);
     if (!c) throw new NotFoundException('Fiche introuvable');
     await this.audit.log(authorId, `content.${status.toLowerCase()}`, 'Content', id);
-    return c;
+    let notified = 0;
+    if (status === 'PUBLISHED' && c.kind === 'REGLEMENTATION' && c.targetCrops.length) {
+      const growers = await this.prisma.parcel.findMany({ where: { cropId: { in: c.targetCrops } }, select: { ownerId: true }, distinct: ['ownerId'] });
+      notified = await this.alerts.notifyDirect('REGLEMENTATION', c.id, growers.map((g) => g.ownerId), `AlerteAgri, nouvelle règle : ${c.title}. ${c.body}`.slice(0, 300));
+    }
+    return { ...c, notified };
   }
 
   async attachAudio(authorId: string, id: string, lang: string, file: UploadedAudio) {
@@ -200,5 +208,5 @@ export class ContentController {
   }
 }
 
-@Module({ controllers: [ContentController], providers: [ContentService], exports: [ContentService] })
+@Module({ imports: [AlertsModule], controllers: [ContentController], providers: [ContentService], exports: [ContentService] })
 export class ContentModule {}

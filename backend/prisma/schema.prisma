@@ -205,7 +205,9 @@ model Alert {
 
 model Notification {
   id        String             @id @default(cuid())
-  alertId   String
+  alertId   String?
+  kind      String             @default("ALERT")
+  refId     String?
   userId    String
   channel   String             @default("SMS")
   body      String
@@ -215,10 +217,11 @@ model Notification {
   readAt    DateTime?
   action    String?
   createdAt DateTime           @default(now())
-  alert     Alert              @relation(fields: [alertId], references: [id])
+  alert     Alert?             @relation(fields: [alertId], references: [id])
   user      User               @relation(fields: [userId], references: [id])
 
   @@unique([alertId, userId])
+  @@unique([kind, refId, userId])
 }
 
 model PestReport {
@@ -231,6 +234,8 @@ model PestReport {
   symptom       String
   lat           Float?
   lon           Float?
+  photo         Bytes?
+  photoMime     String?
   status        ReportStatus @default(PENDING)
   validatedById String?
   validatedAt   DateTime?
@@ -246,6 +251,7 @@ model Content {
   body        String
   pictogram   String
   officialRef String?
+  targetCrops String[]         @default([])
   status      ContentStatus    @default(DRAFT)
   version     Int              @default(1)
   updatedAt   DateTime         @updatedAt
@@ -326,6 +332,7 @@ model Listing {
   crop          Crop     @relation(fields: [cropId], references: [id])
   commune       Commune  @relation(fields: [communeId], references: [id])
   orders        Order[]
+  shares        ListingShare[]
 }
 
 model Order {
@@ -376,11 +383,45 @@ model Parcel {
   areaHa    Float
   lat       Float
   lon       Float
+  sownAt    DateTime? @db.Date
   createdAt DateTime @default(now())
   owner     User     @relation(fields: [ownerId], references: [id])
   commune   Commune  @relation(fields: [communeId], references: [id])
   crop      Crop     @relation(fields: [cropId], references: [id])
   lots      Lot[]
+  reminders StepReminder[]
+}
+
+model StepReminder {
+  id       String    @id @default(cuid())
+  parcelId String
+  code     String
+  label    String
+  due      DateTime  @db.Date
+  sentAt   DateTime?
+  parcel   Parcel    @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@unique([parcelId, code])
+}
+
+model ListingShare {
+  id         String  @id @default(cuid())
+  listingId  String
+  producerId String
+  quantityKg Int
+  listing    Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, producerId])
+}
+
+model IntegrationLog {
+  id        String   @id @default(cuid())
+  target    String
+  status    String
+  simulated Boolean  @default(true)
+  items     Int
+  payload   Json
+  createdAt DateTime @default(now())
 }
 
 model Lot {

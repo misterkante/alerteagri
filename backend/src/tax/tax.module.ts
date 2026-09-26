@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, Module, NotFoundException, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, Module, NotFoundException, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { randomBytes } from 'node:crypto';
 import { IsInt, IsString, Length, Max, Min } from 'class-validator';
@@ -74,6 +75,23 @@ export class TaxService {
     return valid ? { valid, receiptId, commune: p.commune.name, cropId: p.cropId, quantityKg: p.quantityKg, amountFcfa: p.amountFcfa, paidAt: p.paidAt } : { valid: false };
   }
 
+  async reconciliation(actor: AuthenticatedUser) {
+    const me = await this.prisma.user.findUniqueOrThrow({ where: { id: actor.userId } });
+    const where = me.role === 'COMMUNE' ? { communeId: me.communeId } : {};
+    const rows = await this.prisma.taxPayment.findMany({ where, orderBy: { paidAt: 'asc' } });
+    const checked = rows.map((p) => ({
+      receiptId: p.receiptId, communeId: p.communeId, cropId: p.cropId, quantityKg: p.quantityKg, amountFcfa: p.amountFcfa, paidAt: p.paidAt.toISOString(),
+      signatureValid: verifyReceipt({ receiptId: p.receiptId, communeId: p.communeId, amountFcfa: p.amountFcfa, paidAt: p.paidAt.toISOString() }, p.signature, secret()),
+    }));
+    return {
+      communes: [...new Set(checked.map((c) => c.communeId))].sort(),
+      count: checked.length,
+      totalFcfa: checked.filter((c) => c.signatureValid).reduce((s, c) => s + c.amountFcfa, 0),
+      invalid: checked.filter((c) => !c.signatureValid).length,
+      rows: checked,
+    };
+  }
+
   async setRate(actor: AuthenticatedUser, dto: RateDto) {
     const me = await this.prisma.user.findUniqueOrThrow({ where: { id: actor.userId } });
     if (me.role === 'COMMUNE' && me.communeId !== dto.communeId) throw new ForbiddenException('Vous ne gérez que le barème de votre commune');
@@ -125,6 +143,21 @@ export class TaxController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('COMMUNE', 'ADMIN')
   setRate(@CurrentUser() user: AuthenticatedUser, @Body() dto: RateDto) {
     return this.tax.setRate(user, dto);
+  }
+
+  @Get('tax/reconciliation')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('COMMUNE', 'ADMIN')
+  async reconciliation(@CurrentUser() user: AuthenticatedUser) {
+    const { rows, ...summary } = await this.tax.reconciliation(user);
+    return { ...summary, rows: rows.slice(-200) };
+  }
+
+  @Get('tax/reconciliation.csv')
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('COMMUNE', 'ADMIN')
+  async reconciliationCsv(@CurrentUser() user: AuthenticatedUser, @Res({ passthrough: true }) res: Response) {
+    const { rows } = await this.tax.reconciliation(user);
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="rapprochement-tdl.csv"' });
+    return ['receiptId,commune,crop,quantityKg,amountFcfa,paidAt,signatureValid', ...rows.map((r) => [r.receiptId, r.communeId, r.cropId, r.quantityKg, r.amountFcfa, r.paidAt, r.signatureValid].join(','))].join('\n') + '\n';
   }
 
   @Get('tax/revenue')

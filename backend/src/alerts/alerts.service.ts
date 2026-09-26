@@ -100,6 +100,15 @@ export class AlertsService {
     }
   }
 
+  // Notifications that do not come from an alert rule (reminders, regulations): one per (kind, refId, user).
+  async notifyDirect(kind: 'RAPPEL' | 'REGLEMENTATION', refId: string, userIds: string[], body: string) {
+    if (!userIds.length) return 0;
+    const { count } = await this.prisma.notification.createMany({ data: userIds.map((userId) => ({ kind, refId, userId, body })), skipDuplicates: true });
+    const pending = await this.prisma.notification.findMany({ where: { kind, refId, status: 'QUEUED' }, include: { user: true } });
+    for (const n of pending) await this.deliver(n.id, n.user.phone, n.body);
+    return count;
+  }
+
   async acknowledge(notificationId: string, userId: string, action?: string) {
     const n = await this.prisma.notification.findUnique({ where: { id: notificationId } });
     if (!n || n.userId !== userId) throw new NotFoundException('Message introuvable');

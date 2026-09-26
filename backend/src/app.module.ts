@@ -18,13 +18,14 @@ import { MarketModule } from './market/market.module';
 import { TaxModule } from './tax/tax.module';
 import { TraceModule } from './trace/trace.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: Number(process.env.RATE_LIMIT_PER_MIN ?? 120) }]),
     PrismaModule, AuditModule, AuthModule, ReferentialModule, WeatherModule, AlertsModule, AdviceModule, ReportsModule,
-    UsersModule, ContentModule, UssdModule, MarketModule, TaxModule, TraceModule, DashboardModule,
+    UsersModule, ContentModule, UssdModule, MarketModule, TaxModule, TraceModule, DashboardModule, IntegrationsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

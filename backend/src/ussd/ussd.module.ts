@@ -89,7 +89,7 @@ export class UssdService {
           await this.alerts.acknowledge(last.id, user.id, 'confirmé par USSD');
           return end('Merci, lecture confirmée.');
         }
-        return con(`${last.alert.message}\n1. J’ai lu`);
+        return con(`${last.alert?.message ?? last.body.replace(/^AlerteAgri[^:]*: /, '')}\n1. J’ai lu`);
       }
       default:
         return con(`Choix invalide.\n${HOME}`);

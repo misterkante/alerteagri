@@ -8,6 +8,8 @@ import { configure } from '../src/main';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { WeatherService } from '../src/weather/weather.service';
 import { AlertsService } from '../src/alerts/alerts.service';
+import { SMS_PROVIDER } from '../src/alerts/sms.provider';
+import { signReceipt } from '../src/domain/tax';
 
 process.env.RECEIPT_SECRET = 'test-receipt-secret-0123456789';
 process.env.USSD_SECRET = 'test-ussd-secret';
@@ -158,6 +160,48 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
   });
 
+  describe('F-04 AC4 delivery retries', () => {
+    it('a failing phone is retried 3 times then marked FAILED, without blocking the others', async () => {
+      const provider = app.get(SMS_PROVIDER);
+      const original = provider.send;
+      const calls: string[] = [];
+      provider.send = async (phone: string) => { calls.push(phone); if (phone === '+22997000003') throw new Error('réseau opérateur'); };
+      const rule = await prisma.alertRule.findUniqueOrThrow({ where: { id: 'chaleur' } });
+      const alert = await prisma.alert.create({ data: { kind: 'HEAT', ruleId: rule.id, communeId: 'tchaourou', periodKey: `retry-${uid()}`, measured: 42, threshold: 40, message: 'test', firstSignalAt: new Date() } });
+      const rose = await prisma.user.findUniqueOrThrow({ where: { phone: '+22997000003' } });
+      const other = await http().post('/auth/register').send({ phone: phone(), name: 'Voisin', role: 'PRODUCER', communeId: 'tchaourou', pin: '1111' }).expect(201);
+      await app.get(AlertsService).dispatch(alert.id);
+      provider.send = original;
+      const failed = await prisma.notification.findUniqueOrThrow({ where: { alertId_userId: { alertId: alert.id, userId: rose.id } } });
+      expect(failed).toMatchObject({ status: 'FAILED', attempts: 3 });
+      expect(calls.filter((c) => c === '+22997000003')).toHaveLength(3);
+      const ok = await prisma.notification.findUniqueOrThrow({ where: { alertId_userId: { alertId: alert.id, userId: other.body.user.id } } });
+      expect(ok.status).toBe('SENT');
+    });
+  });
+
+  describe('F-08 AC3 rules and calendars managed by agents', () => {
+    it('an agent lists and updates an alert rule; incoherent values are refused', async () => {
+      const list = await http().get('/alerts/rules').set(as('agent')).expect(200);
+      expect(list.body.map((r: { id: string }) => r.id)).toContain('pluie-forte');
+      const r = await http().put('/alerts/rules/pluie-forte').set(as('agent')).send({ threshold: 45, windowDays: 3, neighborKm: 0, active: true, message: 'Forte pluie prévue ({measured} mm). Protégez vos récoltes.' }).expect(200);
+      expect(r.body.threshold).toBe(45);
+      await http().put('/alerts/rules/pluie-forte').set(as('agent')).send({ threshold: -5, windowDays: 3, neighborKm: 0, active: true, message: 'x'.repeat(20) }).expect(400);
+      await http().put('/alerts/rules/pluie-forte').set(as('agent')).send({ threshold: 45, windowDays: 0, neighborKm: 0, active: true, message: 'x'.repeat(20) }).expect(400);
+      await http().put('/alerts/rules/pluie-forte').set(as('producer')).send({ threshold: 45, windowDays: 3, neighborKm: 0, active: true, message: 'x'.repeat(20) }).expect(403);
+      await http().put('/alerts/rules/pluie-forte').set(as('agent')).send({ threshold: 50, windowDays: 3, neighborKm: 0, active: true, message: 'Forte pluie prévue ({measured} mm). Dégagez les rigoles, protégez récoltes et semences.' }).expect(200);
+      expect(await prisma.auditLog.count({ where: { entity: 'AlertRule', entityId: 'pluie-forte' } })).toBeGreaterThanOrEqual(2);
+    });
+    it('an agent updates a sowing window; an inverted window is refused', async () => {
+      const w = await http().put('/crops/mais/windows').set(as('agent')).send({ zone: 'SUD', season: 2, start: '08-25', end: '10-10' }).expect(200);
+      expect(w.body).toMatchObject({ startMmDd: '08-25', endMmDd: '10-10' });
+      await http().put('/crops/mais/windows').set(as('agent')).send({ zone: 'SUD', season: 2, start: '10-10', end: '08-25' }).expect(400);
+      await http().put('/crops/mais/windows').set(as('agent')).send({ zone: 'SUD', season: 2, start: '13-40', end: '14-01' }).expect(400);
+      await http().put('/crops/mais/windows').set(as('producer')).send({ zone: 'SUD', season: 2, start: '08-25', end: '10-05' }).expect(403);
+      await http().put('/crops/mais/windows').set(as('agent')).send({ zone: 'SUD', season: 2, start: '08-25', end: '10-05' }).expect(200);
+    });
+  });
+
   describe('F-06 pest reports', () => {
     it('AC4 the same clientId is stored once', async () => {
       const clientId = uid();
@@ -297,6 +341,117 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
     it('a commune cannot change another commune’s rates', async () => {
       await http().put('/tax/rates').set(as('commune')).send({ communeId: 'bohicon', cropId: 'mais', fcfaPer100Kg: 1 }).expect(403);
+    });
+  });
+
+  describe('V2', () => {
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200)]);
+    it('F-16 AC1-2 a report photo is accepted, validated by content, visible to agents only', async () => {
+      const r = await http().post('/reports').set(as('producer')).send({ clientId: uid(), cropId: 'mais', symptom: 'chenilles' }).expect(201);
+      await http().post(`/reports/${r.body.id}/photo`).set(as('producer')).attach('file', jpeg, 'champ.jpg').expect(201);
+      const img = await http().get(`/reports/${r.body.id}/photo`).set(as('agent')).expect(200);
+      expect(img.headers['content-type']).toMatch(/image\/jpeg/);
+      await http().get(`/reports/${r.body.id}/photo`).set(as('otherProducer')).expect(403);
+      await http().post(`/reports/${r.body.id}/photo`).set(as('producer')).attach('file', Buffer.from('<svg onload=alert(1)>'.padEnd(40, ' ')), 'x.jpg').expect(400);
+      await http().post(`/reports/${r.body.id}/photo`).set(as('otherProducer')).attach('file', jpeg, 'x.jpg').expect(404);
+    });
+
+    it('F-17 AC1-3 a sown parcel gets its steps, reminders are sent once', async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const sown = new Date(Date.now() - 25 * 86400000).toISOString().slice(0, 10);
+      const p = await http().post('/parcels').set(as('producer')).send({ cropId: 'mais', areaHa: 1, lat: 9.34, lon: 2.62, sownAt: sown }).expect(201);
+      const steps = await http().get(`/parcels/${p.body.id}/steps`).set(as('producer')).expect(200);
+      expect(steps.body.map((s: { code: string }) => s.code)).toEqual(['levee', 'sarclage', 'fertilisation', 'recolte']);
+      const run1 = await http().post('/parcels/reminders/run').set(as('agent')).expect(201);
+      const run2 = await http().post('/parcels/reminders/run').set(as('agent')).expect(201);
+      expect(run1.body.sent).toBeGreaterThanOrEqual(2);
+      expect(run2.body.sent).toBe(0);
+      expect(run2.body.due).toBe(0);
+      const mine = await http().get('/alerts/me').set(as('producer')).expect(200);
+      expect(mine.body.some((n: { kind: string; body: string }) => n.kind === 'RAPPEL' && /sarclage/i.test(n.body))).toBe(true);
+      await http().post('/parcels').set(as('producer')).send({ cropId: 'mais', areaHa: 1, lat: 9.34, lon: 2.62, sownAt: '2099-01-01' }).expect(400);
+      expect(today).toBeTruthy();
+    });
+
+    it('USSD "mes alertes" works with a reminder that has no alert', async () => {
+      const r = await http().post('/ussd').set('x-ussd-secret', 'test-ussd-secret').send({ sessionId: uid(), phoneNumber: '+22997000001', text: '5' }).expect(200);
+      expect(r.text).toMatch(/^CON /);
+    });
+
+    it('F-18 AC1-2 water balance of a parcel with and without weather data', async () => {
+      const p = await prisma.parcel.findFirstOrThrow({ where: { sownAt: { not: null }, owner: { phone: '+22997000001' } }, orderBy: { createdAt: 'desc' } });
+      const r = await http().get(`/parcels/${p.id}/water`).set(as('producer')).expect(200);
+      expect(['NORMAL', 'SURVEILLER', 'STRESS', 'INCONNU']).toContain(r.body.level);
+      await prisma.weatherDaily.deleteMany({ where: { communeId: 'kalale' } });
+      const empty = await prisma.parcel.create({ data: { ownerId: (await prisma.user.findUniqueOrThrow({ where: { phone: '+22997000001' } })).id, communeId: 'kalale', cropId: 'mais', areaHa: 1, lat: 10.3, lon: 3.4, sownAt: new Date('2026-06-01T00:00:00Z') } });
+      const u = await http().get(`/parcels/${empty.id}/water`).set(as('producer')).expect(200);
+      expect(u.body.level).toBe('INCONNU');
+      await http().get(`/parcels/${p.id}/water`).set(as('otherProducer')).expect(404);
+    });
+
+    it('F-19 AC1-2 publishing a regulation for soy notifies soy growers once', async () => {
+      const c = await http().post('/cms/contents').set(as('agent')).send({ kind: 'REGLEMENTATION', title: 'Nouvelle norme soja', body: 'Humidité maximale du soja livré : 12 pour cent.', pictogram: 'ban', targetCrops: ['soja'] }).expect(201);
+      const p1 = await http().post(`/cms/contents/${c.body.id}/publish`).set(as('agent')).expect(201);
+      const p2 = await http().post(`/cms/contents/${c.body.id}/publish`).set(as('agent')).expect(201);
+      expect(p1.body.notified).toBeGreaterThanOrEqual(1);
+      expect(p2.body.notified).toBe(0);
+      const awa = await prisma.user.findUniqueOrThrow({ where: { phone: '+22997000001' } });
+      expect(await prisma.notification.count({ where: { kind: 'REGLEMENTATION', refId: c.body.id, userId: awa.id } })).toBe(1);
+      const none = await http().post('/cms/contents').set(as('agent')).send({ kind: 'REGLEMENTATION', title: 'Sans cible', body: 'Fiche sans culture ciblée.', pictogram: 'ban' }).expect(201);
+      expect((await http().post(`/cms/contents/${none.body.id}/publish`).set(as('agent')).expect(201)).body.notified).toBe(0);
+    });
+
+    it('F-20 AC1-2 an advisor groups producers of the commune into one offer', async () => {
+      const producers = await http().get('/users/producers').set(as('advisor')).expect(200);
+      const ids = producers.body.slice(0, 2).map((p: { id: string }) => p.id);
+      const g = await http().post('/market/group-listings').set(as('advisor')).send({ clientId: uid(), cropId: 'mais', pricePerKg: 215, shares: ids.map((id: string, i: number) => ({ producerId: id, quantityKg: 100 * (i + 1) })) }).expect(201);
+      expect(g.body.quantityKg).toBe(300);
+      expect(await prisma.listingShare.count({ where: { listingId: g.body.id } })).toBe(2);
+      const kossi = await prisma.user.findUniqueOrThrow({ where: { phone: '+22997000004' } });
+      await http().post('/market/group-listings').set(as('advisor')).send({ clientId: uid(), cropId: 'mais', pricePerKg: 215, shares: [{ producerId: kossi.id, quantityKg: 50 }] }).expect(403);
+      await http().post('/market/group-listings').set(as('advisor')).send({ clientId: uid(), cropId: 'soja', pricePerKg: 300, forExport: true, shares: ids.map((id: string) => ({ producerId: id, quantityKg: 10 })) }).expect(400);
+    });
+
+    it('F-21 AC1-2 FAMEWS export has no personal data', async () => {
+      const r = await http().get('/exports/famews').set(as('agent')).expect(200);
+      expect(r.headers['content-type']).toMatch(/text\/csv/);
+      expect(r.text.split('\n')[0]).toBe('date,country,admin1,admin2,latitude,longitude,crop,pest,observation');
+      expect(r.text).not.toMatch(/\+229|Awa/);
+      await http().get('/exports/famews').set(as('producer')).expect(403);
+    });
+
+    it('F-22 AC1-2 TDL reconciliation checks every signature, scoped to the commune', async () => {
+      const paidAt = new Date();
+      const other = { receiptId: `TDL-B${uid()}`, communeId: 'bohicon', amountFcfa: 150, paidAt: paidAt.toISOString() };
+      await prisma.taxPayment.create({ data: { ...other, paidAt, clientId: uid(), cropId: 'mais', quantityKg: 100, signature: signReceipt(other, process.env.RECEIPT_SECRET!) } });
+      const r = await http().get('/tax/reconciliation').set(as('commune')).expect(200);
+      expect(r.body.invalid).toBe(0);
+      expect(r.body.count).toBeGreaterThan(0);
+      expect(r.body.communes).toEqual(['parakou']);
+      const csv = await http().get('/tax/reconciliation.csv').set(as('commune')).expect(200);
+      expect(csv.text.split('\n')[0]).toMatch(/^receiptId,commune,crop,quantityKg,amountFcfa,paidAt,signatureValid/);
+      await prisma.taxPayment.updateMany({ where: { communeId: 'parakou' }, data: {} });
+      const one = await prisma.taxPayment.findFirstOrThrow({ where: { communeId: 'parakou' } });
+      await prisma.taxPayment.update({ where: { id: one.id }, data: { amountFcfa: one.amountFcfa + 1 } });
+      expect((await http().get('/tax/reconciliation').set(as('commune')).expect(200)).body.invalid).toBe(1);
+      await prisma.taxPayment.update({ where: { id: one.id }, data: { amountFcfa: one.amountFcfa } });
+    });
+
+    it('F-23 AC1 lots are sent to the SIPI connector, logged as simulated', async () => {
+      const r = await http().post('/integrations/sipi/lots').set(as('agent')).expect(201);
+      expect(r.body).toMatchObject({ target: 'SIPI-Bénin marché terminal', simulated: true });
+      expect(r.body.items).toBeGreaterThan(0);
+      expect(JSON.stringify(r.body.payload)).not.toMatch(/\+229/);
+      await http().post('/integrations/sipi/lots').set(as('producer')).expect(403);
+    });
+
+    it('F-24 AC1-2 drought index per commune, labelled as a simulation, reproducible', async () => {
+      const a = await http().get('/dashboard/drought').set(as('agent')).expect(200);
+      const b = await http().get('/dashboard/drought').set(as('agent')).expect(200);
+      expect(a.body.simulation).toBe(true);
+      expect(a.body.communes.length).toBeGreaterThan(0);
+      expect(a.body.communes).toEqual(b.body.communes);
+      expect(a.body.communes.every((c: { index: number }) => c.index >= 0 && c.index <= 1)).toBe(true);
     });
   });
 

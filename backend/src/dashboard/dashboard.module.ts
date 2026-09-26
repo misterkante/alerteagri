@@ -7,6 +7,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { protectedValueFcfa } from '../domain/value';
+import { droughtIndex, MAX_PAYOUT_FCFA_PER_HA } from '../domain/season';
+
+export const DROUGHT_WINDOW_DAYS = 30;
 
 export const GDIZ_CAPACITY_T = { anacarde: 120000, soja: 260000, coton: 40000 };
 export const GDIZ_SOURCE = 'Capacités installées GDIZ 2026 (La Nouvelle Tribune, Nasuba), cahier des charges SIPI-Bénin art. 6';
@@ -52,6 +55,24 @@ export class DashboardService {
     return { estimate: true, method: 'surface déclarée × rendement de référence indicatif × prix de référence moyen', alerts: out };
   }
 
+  // Season window: the last 30 observed days, the same data for everyone, so the index is reproducible.
+  async drought(now = new Date()) {
+    const today = new Date(now.toISOString().slice(0, 10) + 'T00:00:00Z');
+    const since = new Date(today.getTime() - DROUGHT_WINDOW_DAYS * 86400000);
+    const sums = await this.prisma.weatherDaily.groupBy({ by: ['communeId'], where: { isForecast: false, date: { gte: since, lt: today } }, _sum: { rainMm: true, et0Mm: true } });
+    const communes = await this.prisma.commune.findMany({ select: { id: true, name: true, pole: true } });
+    return {
+      simulation: true,
+      method: `Pluie cumulée comparée à l’évapotranspiration de référence (ET0) sur ${DROUGHT_WINDOW_DAYS} jours ; versement indicatif jusqu’à ${MAX_PAYOUT_FCFA_PER_HA.toLocaleString('fr-FR')} FCFA par hectare`,
+      communes: sums.map((s) => {
+        const c = communes.find((x) => x.id === s.communeId);
+        const rain = Math.round((s._sum.rainMm ?? 0) * 10) / 10;
+        const et0 = Math.round((s._sum.et0Mm ?? 0) * 10) / 10;
+        return { communeId: s.communeId, name: c?.name, pole: c?.pole, rainMm: rain, et0Mm: et0, ...droughtIndex(rain, et0) };
+      }).sort((a, b) => b.index - a.index || a.communeId.localeCompare(b.communeId)),
+    };
+  }
+
   async gdizSupply() {
     const parcels = await this.prisma.parcel.findMany({ where: { cropId: { in: Object.keys(GDIZ_CAPACITY_T) } }, include: { crop: true } });
     return {
@@ -82,6 +103,12 @@ export class DashboardController {
   @Get('protected-value')
   protectedValue(@CurrentUser() user: AuthenticatedUser) {
     return this.dashboard.protectedValue(user);
+  }
+
+  @Get('drought')
+  @Roles('AGENT', 'ADMIN')
+  drought() {
+    return this.dashboard.drought();
   }
 
   @Get('gdiz')

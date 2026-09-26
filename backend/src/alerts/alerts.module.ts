@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Module, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Module, NotFoundException, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { AuditService } from '../common/audit.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -9,6 +10,14 @@ import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { AlertsService } from './alerts.service';
 import { InternalOutboxProvider, SMS_PROVIDER } from './sms.provider';
+
+class RuleDto {
+  @IsNumber() @Min(0) @Max(1000) threshold: number;
+  @IsInt() @Min(1) @Max(30) windowDays: number;
+  @IsInt() @Min(0) @Max(200) neighborKm: number;
+  @IsBoolean() active: boolean;
+  @IsString() @Length(10, 240) message: string;
+}
 
 class AckDto {
   @IsOptional() @IsString() @Length(1, 120) action?: string;
@@ -19,7 +28,22 @@ class AckDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('alerts')
 export class AlertsController {
-  constructor(private readonly alerts: AlertsService, private readonly prisma: PrismaService) {}
+  constructor(private readonly alerts: AlertsService, private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+
+  @Get('rules')
+  @Roles('AGENT', 'ADMIN')
+  rules() {
+    return this.prisma.alertRule.findMany({ orderBy: { id: 'asc' } });
+  }
+
+  @Put('rules/:id')
+  @Roles('AGENT', 'ADMIN')
+  async updateRule(@Param('id') id: string, @Body() dto: RuleDto, @CurrentUser() user: AuthenticatedUser) {
+    if (!(await this.prisma.alertRule.findUnique({ where: { id } }))) throw new NotFoundException('Règle inconnue');
+    const r = await this.prisma.alertRule.update({ where: { id }, data: dto });
+    await this.audit.log(user.userId, 'rule.update', 'AlertRule', id, { ...dto });
+    return r;
+  }
 
   @Get()
   @Roles('AGENT', 'ADMIN', 'COMMUNE')

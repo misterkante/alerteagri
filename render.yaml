@@ -30,7 +30,10 @@ services:
         value: "true"
       - key: JWT_EXPIRES_IN
         value: 7d
-      # Per address: a room of testers on one wifi shares it.
+      # Measured on 2026-09-26: local proxy, Render network, Cloudflare. The real client is behind them.
+      - key: TRUST_PROXY_HOPS
+        value: "3"
+      # Per signed-in account, or per address for anonymous visitors.
       - key: RATE_LIMIT_PER_MIN
         value: "600"
       # Login attempts per account and address, then per address across accounts.

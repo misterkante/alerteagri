@@ -7,13 +7,13 @@
 | | |
 |---|---|
 | Features | F-01 à F-24 livrées : 15 du périmètre initial et 9 de la V2 (F-16 à F-24) ; F-23 et F-24 sont des simulations assumées (KI-016, KI-017) |
-| Tests | 91 tests des règles métier, 65 tests de bout en bout de l'API sur une vraie base PostgreSQL, 186 tests navigateur (Playwright) : 34 parcours et 152 audits d'accessibilité ; tous verts |
+| Tests | 93 tests des règles métier, 65 tests de bout en bout de l'API sur une vraie base PostgreSQL, 186 tests navigateur (Playwright) : 34 parcours et 152 audits d'accessibilité ; tous verts |
 | Accessibilité | axe, WCAG 2.1 A et AA : 0 violation sur 18 écrans et 5 rôles, à 360 px et sur ordinateur, en clair et en sombre ; onglets et choix utilisables au clavier (motifs WAI-ARIA), sous-titres sur les fiches audio |
 | Qualité continue | hooks Husky (pre-commit, commit-msg, pre-push) et CI GitHub Actions en trois jobs ; TypeScript strict ; ESLint à 0 avertissement sur les deux applications |
 | Mutation (règles métier) | 557 mutants détectés sur 573 (97 %), après renforcement des tests V2 (80 % au premier passage) |
 | Failles réintroduites volontairement | 13 sur 13 détectées (V1 : escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN ; V2 : photo visible par tous, regroupement hors commune, rappel envoyé deux fois, rapprochement non limité à la commune, règle notifiée deux fois) ; 4 tests trop faibles révélés puis corrigés |
 | Documentation vérifiée contre le code | vérification automatique des diagrammes contre le code : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
-| Problèmes connus | 31 inscrits ; ouverts : 4 high, 8 medium, 7 low ; corrigés : KI-007, KI-008, KI-009, KI-011, KI-012, KI-019, KI-020, KI-022, KI-023, KI-025, KI-026, KI-027 |
+| Problèmes connus | 32 inscrits ; ouverts : 4 high, 8 medium, 7 low ; corrigés : KI-007, KI-008, KI-009, KI-011, KI-012, KI-019, KI-020, KI-022, KI-023, KI-025, KI-026, KI-027, KI-032 |
 | Pentest | API en production testée le 2026-09-26 (`docs/security/pentest-2026-09-26.md`) : aucune faille exploitable ; injections et fichier piégé bloqués en amont par le pare-feu de l'hébergeur, donc non testés côté application en ligne mais couverts en e2e |
 
 ## Critères d'acceptation

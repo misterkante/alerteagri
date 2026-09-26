@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
 import { evaluateClimateRule, ClimateKind } from '../domain/climate-rules';
 import { neighborIds, MAX_NEIGHBORS } from '../domain/geo';
+import { fillMessage as fill } from '../domain/messages';
 import { RuleDto } from './dto/rule.dto';
 import { SMS_PROVIDER, SmsProvider } from './sms.provider';
 
@@ -19,11 +20,6 @@ const CLIMATE_KINDS: AlertKind[] = [
   'DISEASE_HUMIDITY',
 ];
 export const MAX_ATTEMPTS = 3;
-const fill = (tpl: string, vars: Record<string, string | number>) =>
-  Object.entries(vars).reduce(
-    (s, [k, v]) => s.split(`{${k}}`).join(String(v)),
-    tpl,
-  );
 
 @Injectable()
 export class AlertsService {

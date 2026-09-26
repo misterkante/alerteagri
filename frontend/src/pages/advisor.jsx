@@ -4,7 +4,7 @@ import { Droplets, LocateFixed, PackagePlus, Sprout, Users } from 'lucide-react'
 import { api, newClientId } from '../api';
 import { CropPicker, Demo, ErrorNote, Qr, Shell } from '../ui';
 import { CROPS } from '../lib/crops';
-import { fmtDate } from '../lib/format';
+import { fmtDate, fmtNum } from '../lib/format';
 import { useSession } from '../lib/session';
 
 const LEVEL = {
@@ -407,7 +407,7 @@ export function Parcels() {
               {p.owner.name} · {cropName(p.cropId)} · {p.areaHa} ha{p.sownAt ? ` · semé le ${fmtDate(p.sownAt)}` : ''}
             </p>
             <p className="text-xs text-soil-muted">
-              {p.lat.toFixed(4)}, {p.lon.toFixed(4)}
+              {fmtNum(p.lat, 4)} ; {fmtNum(p.lon, 4)}
               {p.lots.length ? ` · ${p.lots.length} lot(s) : ${p.lots.map((l) => l.code).join(', ')}` : ''}
             </p>
             <details className="mt-2">

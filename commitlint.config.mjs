@@ -13,7 +13,8 @@ export default {
   rules: {
     'no-ai-attribution': [2, 'always'],
     'scope-enum': [2, 'always', ['api', 'web', 'db', 'ci', 'docs', 'deps', 'e2e', 'repo']],
-    'subject-case': [2, 'always', 'lower-case'],
+    // No capital at the start of the subject; proper nouns inside it stay allowed.
+    'subject-case': [2, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
     'header-max-length': [2, 'always', 100],
     'body-max-line-length': [2, 'always', 100],
   },

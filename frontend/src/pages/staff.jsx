@@ -21,7 +21,7 @@ import { api, newClientId, sendOrQueue } from '../api';
 import { AuthImage, Demo, ErrorNote, ScrollArea, Shell, SignInPrompt, Stat, StatusLegend, StatusMark, TabPanel, Tabs } from '../ui';
 import { CROPS } from '../lib/crops';
 import { downloadWithAuth } from '../lib/download';
-import { fmtDate, fmtFcfa } from '../lib/format';
+import { fmtDate, fmtFcfa, fmtNum, fmtDateTime } from '../lib/format';
 import { useSession } from '../lib/session';
 import { LANG_LABEL, LANG_TAG } from '../lib/constants';
 
@@ -215,7 +215,7 @@ function Overview({ overview, alerts, value, gdiz, reportsCount }) {
                 label="Couverture de la capacité GDIZ par filière"
                 rows={gdiz.crops.map((c) => ({ key: c.cropId, label: cropName(c.cropId), value: c.coverage * 100 }))}
                 max={Math.max(1, ...gdiz.crops.map((c) => c.coverage * 100))}
-                format={(v) => `${v < 0.1 && v > 0 ? '<0,1' : v.toFixed(1)} %`}
+                format={(v) => `${v < 0.1 && v > 0 ? '<0,1' : fmtNum(v, 1)} %`}
               />
               <table className="table mt-3">
                 <thead>
@@ -229,8 +229,8 @@ function Overview({ overview, alerts, value, gdiz, reportsCount }) {
                   {gdiz.crops.map((c) => (
                     <tr key={c.cropId}>
                       <td>{cropName(c.cropId)}</td>
-                      <td className="tabular-nums">{c.expectedT}</td>
-                      <td className="tabular-nums">{c.capacityT.toLocaleString('fr-FR')}</td>
+                      <td className="tabular-nums">{fmtNum(c.expectedT, 1)}</td>
+                      <td className="tabular-nums">{fmtNum(c.capacityT)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -289,7 +289,7 @@ function ReportsTab({ reports, act }) {
             <p className="text-sm text-soil-muted">
               {r.commune.name} · {fmtDate(r.createdAt)}
               {r.actingForId ? ' · par un conseiller' : ''}
-              {r.lat ? ` · ${r.lat.toFixed(3)}, ${r.lon.toFixed(3)}` : ''}
+              {r.lat ? ` · ${fmtNum(r.lat, 3)} ; ${fmtNum(r.lon, 3)}` : ''}
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               <button className="btn-primary min-h-10 py-2" onClick={() => act(() => api(`/reports/${r.id}/validate`, { method: 'POST' }))}>
@@ -588,7 +588,7 @@ function DroughtTab() {
           label="Indice de sécheresse, communes les plus exposées"
           rows={top.map((c) => ({ key: c.communeId, label: c.name, value: c.index }))}
           max={1}
-          format={(v) => v.toFixed(2)}
+          format={(v) => fmtNum(v, 2)}
         />
       </section>
       <ScrollArea label="Indice de sécheresse par commune" className="card mt-4 p-0">
@@ -610,7 +610,7 @@ function DroughtTab() {
                 <td>{c.pole}</td>
                 <td className="tabular-nums">{c.rainMm}</td>
                 <td className="tabular-nums">{c.et0Mm}</td>
-                <td className="tabular-nums">{c.index.toFixed(2)}</td>
+                <td className="tabular-nums">{fmtNum(c.index, 2)}</td>
                 <td className="tabular-nums">{fmtFcfa(c.payoutFcfaPerHa)}</td>
               </tr>
             ))}
@@ -670,7 +670,7 @@ function InteropTab({ act }) {
         <ul className="text-sm">
           {log.map((l) => (
             <li key={l.id} className="border-t border-soil-line py-1.5">
-              {new Date(l.createdAt).toLocaleString('fr-FR')} · {l.target} · {l.items} lot(s) · {l.status}
+              {fmtDateTime(l.createdAt)} · {l.target} · {l.items} lot(s) · {l.status}
               {l.simulated ? ' (simulé)' : ''}
             </li>
           ))}
@@ -782,7 +782,7 @@ export function Dashboard() {
           </button>
         )}
         <span className="text-sm text-soil-muted">
-          Dernier relevé : {overview?.lastWeatherRun ? new Date(overview.lastWeatherRun).toLocaleString('fr-FR') : 'jamais'}
+          Dernier relevé : {overview?.lastWeatherRun ? fmtDateTime(overview.lastWeatherRun) : 'jamais'}
         </span>
       </div>
       <ErrorNote error={error} />

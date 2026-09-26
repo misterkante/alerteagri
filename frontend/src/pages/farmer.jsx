@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
 import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, SpeakButton, Stat, TileRadioGroup, Verdict } from '../ui';
-import { fmtDate } from '../lib/format';
+import { fmtDate, fmtTime } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
 import { HOME_BY_ROLE, LANG_LABEL, LANG_TAG } from '../lib/constants';
@@ -79,7 +79,7 @@ export function Home() {
           <Stat label="Communes suivies" value={stats.communes} hint="relevé quotidien" />
           <Stat
             label="Dernier relevé"
-            value={stats.weather ? new Date(stats.weather).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '–'}
+            value={stats.weather ? fmtTime(stats.weather) : '–'}
             hint={stats.weather ? fmtDate(stats.weather) : 'Open-Meteo'}
           />
           <Stat label="Fiches publiées" value={stats.fiches} hint="lues à voix haute" />

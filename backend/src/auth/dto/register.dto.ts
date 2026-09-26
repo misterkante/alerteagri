@@ -23,7 +23,7 @@ export class RegisterDto {
   @Length(2, 60)
   communeId!: string;
 
-  @ApiProperty({ example: '1234', description: 'Code PIN a 4 chiffres' })
+  @ApiProperty({ example: '1234', description: 'Code PIN à 4 chiffres' })
   @IsString()
   @Matches(/^[0-9]{4}$/, {
     message: 'Le PIN doit contenir exactement 4 chiffres',

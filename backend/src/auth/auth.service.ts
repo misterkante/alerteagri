@@ -25,7 +25,9 @@ export class AuthService {
       where: { phone: dto.phone },
     });
     if (existing) {
-      throw new ConflictException('Ce numero est deja enregistre');
+      throw new ConflictException(
+        'Ce numéro est déjà enregistré : connectez-vous',
+      );
     }
 
     if (
@@ -52,12 +54,12 @@ export class AuthService {
       where: { phone: dto.phone },
     });
     if (!user) {
-      throw new UnauthorizedException('Numero ou PIN incorrect');
+      throw new UnauthorizedException('Numéro ou PIN incorrect');
     }
 
     const pinMatches = await bcrypt.compare(dto.pin, user.pinHash);
     if (!pinMatches) {
-      throw new UnauthorizedException('Numero ou PIN incorrect');
+      throw new UnauthorizedException('Numéro ou PIN incorrect');
     }
 
     return this.buildSession(user);

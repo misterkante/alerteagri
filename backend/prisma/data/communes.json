@@ -1,0 +1,618 @@
+[
+ {
+  "name": "Banikoara",
+  "department": "Alibori",
+  "pole": 2,
+  "lat": 11.2985,
+  "lon": 2.4386,
+  "geocodedAs": "Banikoara"
+ },
+ {
+  "name": "Gogounou",
+  "department": "Alibori",
+  "pole": 2,
+  "lat": 10.8399,
+  "lon": 2.8317,
+  "geocodedAs": "Gogounou"
+ },
+ {
+  "name": "Kandi",
+  "department": "Alibori",
+  "pole": 2,
+  "lat": 11.1342,
+  "lon": 2.9386,
+  "geocodedAs": "Kandi"
+ },
+ {
+  "name": "Karimama",
+  "department": "Alibori",
+  "pole": 1,
+  "lat": 12.0691,
+  "lon": 3.1841,
+  "geocodedAs": "Karimama"
+ },
+ {
+  "name": "Malanville",
+  "department": "Alibori",
+  "pole": 1,
+  "lat": 11.8682,
+  "lon": 3.3833,
+  "geocodedAs": "Malanville"
+ },
+ {
+  "name": "Ségbana",
+  "department": "Alibori",
+  "pole": 2,
+  "lat": 10.9282,
+  "lon": 3.6943,
+  "geocodedAs": "Ségbana"
+ },
+ {
+  "name": "Boukoumbé",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.1771,
+  "lon": 1.1062,
+  "geocodedAs": "Boukoumbé"
+ },
+ {
+  "name": "Cobly",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.4922,
+  "lon": 0.9997,
+  "geocodedAs": "Cobly"
+ },
+ {
+  "name": "Kérou",
+  "department": "Atacora",
+  "pole": 2,
+  "lat": 10.8258,
+  "lon": 2.1048,
+  "geocodedAs": "Kérou"
+ },
+ {
+  "name": "Kouandé",
+  "department": "Atacora",
+  "pole": 2,
+  "lat": 10.3417,
+  "lon": 1.6892,
+  "geocodedAs": "Kouandé"
+ },
+ {
+  "name": "Matéri",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.6962,
+  "lon": 1.0631,
+  "geocodedAs": "Matéri"
+ },
+ {
+  "name": "Natitingou",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.3042,
+  "lon": 1.3796,
+  "geocodedAs": "Natitingou"
+ },
+ {
+  "name": "Péhunco",
+  "department": "Atacora",
+  "pole": 2,
+  "lat": 10.2275,
+  "lon": 2.0019,
+  "geocodedAs": "Pehonko"
+ },
+ {
+  "name": "Tanguiéta",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.6212,
+  "lon": 1.2665,
+  "geocodedAs": "Tanguiéta"
+ },
+ {
+  "name": "Toucountouna",
+  "department": "Atacora",
+  "pole": 3,
+  "lat": 10.5028,
+  "lon": 1.3744,
+  "geocodedAs": "Toukountouna"
+ },
+ {
+  "name": "Abomey-Calavi",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.4485,
+  "lon": 2.3557,
+  "geocodedAs": "Abomey-Calavi"
+ },
+ {
+  "name": "Allada",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.6655,
+  "lon": 2.1514,
+  "geocodedAs": "Allada"
+ },
+ {
+  "name": "Kpomassè",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.4622,
+  "lon": 1.9936,
+  "geocodedAs": "Kpomassè"
+ },
+ {
+  "name": "Ouidah",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.3631,
+  "lon": 2.0851,
+  "geocodedAs": "Ouidah"
+ },
+ {
+  "name": "Sô-Ava",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.4924,
+  "lon": 2.4019,
+  "geocodedAs": "So-Ava"
+ },
+ {
+  "name": "Toffo",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.85,
+  "lon": 2.0833,
+  "geocodedAs": "Toffo"
+ },
+ {
+  "name": "Tori-Bossito",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.503,
+  "lon": 2.1441,
+  "geocodedAs": "Tori-Bossito"
+ },
+ {
+  "name": "Zè",
+  "department": "Atlantique",
+  "pole": 7,
+  "lat": 6.7833,
+  "lon": 2.3,
+  "geocodedAs": "Zè"
+ },
+ {
+  "name": "Bembèrèkè",
+  "department": "Borgou",
+  "pole": 2,
+  "lat": 10.2283,
+  "lon": 2.6633,
+  "geocodedAs": "Bembèrèkè"
+ },
+ {
+  "name": "Kalalé",
+  "department": "Borgou",
+  "pole": 2,
+  "lat": 10.2927,
+  "lon": 3.3837,
+  "geocodedAs": "Kalalé"
+ },
+ {
+  "name": "N'Dali",
+  "department": "Borgou",
+  "pole": 4,
+  "lat": 9.8636,
+  "lon": 2.7209,
+  "geocodedAs": "Ndali"
+ },
+ {
+  "name": "Nikki",
+  "department": "Borgou",
+  "pole": 2,
+  "lat": 9.9401,
+  "lon": 3.2107,
+  "geocodedAs": "Nikki"
+ },
+ {
+  "name": "Parakou",
+  "department": "Borgou",
+  "pole": 4,
+  "lat": 9.3372,
+  "lon": 2.6303,
+  "geocodedAs": "Parakou"
+ },
+ {
+  "name": "Pèrèrè",
+  "department": "Borgou",
+  "pole": 4,
+  "lat": 9.7972,
+  "lon": 2.984,
+  "geocodedAs": "Pèrèrè"
+ },
+ {
+  "name": "Sinendé",
+  "department": "Borgou",
+  "pole": 2,
+  "lat": 10.3496,
+  "lon": 2.3791,
+  "geocodedAs": "Sinendé"
+ },
+ {
+  "name": "Tchaourou",
+  "department": "Borgou",
+  "pole": 4,
+  "lat": 8.8865,
+  "lon": 2.5975,
+  "geocodedAs": "Tchaourou"
+ },
+ {
+  "name": "Bantè",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 8.4122,
+  "lon": 1.8897,
+  "geocodedAs": "Bantè"
+ },
+ {
+  "name": "Dassa-Zoumè",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 7.75,
+  "lon": 2.1833,
+  "geocodedAs": "Dassa-Zoumè"
+ },
+ {
+  "name": "Glazoué",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 7.9725,
+  "lon": 2.2218,
+  "geocodedAs": "Glazoué"
+ },
+ {
+  "name": "Ouèssè",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 8.4864,
+  "lon": 2.4287,
+  "geocodedAs": "Ouèssè"
+ },
+ {
+  "name": "Savalou",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 7.9281,
+  "lon": 1.9756,
+  "geocodedAs": "Savalou"
+ },
+ {
+  "name": "Savè",
+  "department": "Collines",
+  "pole": 4,
+  "lat": 8.0342,
+  "lon": 2.4866,
+  "geocodedAs": "Savè"
+ },
+ {
+  "name": "Aplahoué",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.9333,
+  "lon": 1.6833,
+  "geocodedAs": "Aplahoué"
+ },
+ {
+  "name": "Djakotomey",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.9,
+  "lon": 1.72,
+  "geocodedAs": "manuel, coordonnées approximatives"
+ },
+ {
+  "name": "Dogbo",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.7991,
+  "lon": 1.7807,
+  "geocodedAs": "Dogbo"
+ },
+ {
+  "name": "Klouékanmè",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.9803,
+  "lon": 1.8422,
+  "geocodedAs": "Klouékanmè"
+ },
+ {
+  "name": "Lalo",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.9287,
+  "lon": 1.8899,
+  "geocodedAs": "Lalo"
+ },
+ {
+  "name": "Toviklin",
+  "department": "Couffo",
+  "pole": 5,
+  "lat": 6.8894,
+  "lon": 1.8372,
+  "geocodedAs": "Toviklin"
+ },
+ {
+  "name": "Bassila",
+  "department": "Donga",
+  "pole": 4,
+  "lat": 9.0081,
+  "lon": 1.6654,
+  "geocodedAs": "Bassila"
+ },
+ {
+  "name": "Copargo",
+  "department": "Donga",
+  "pole": 4,
+  "lat": 9.8411,
+  "lon": 1.5423,
+  "geocodedAs": "Copargo"
+ },
+ {
+  "name": "Djougou",
+  "department": "Donga",
+  "pole": 4,
+  "lat": 9.7085,
+  "lon": 1.666,
+  "geocodedAs": "Djougou"
+ },
+ {
+  "name": "Ouaké",
+  "department": "Donga",
+  "pole": 4,
+  "lat": 9.6617,
+  "lon": 1.3847,
+  "geocodedAs": "Ouaké"
+ },
+ {
+  "name": "Cotonou",
+  "department": "Littoral",
+  "pole": 7,
+  "lat": 6.3654,
+  "lon": 2.4183,
+  "geocodedAs": "Cotonou"
+ },
+ {
+  "name": "Athiémé",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.5808,
+  "lon": 1.6696,
+  "geocodedAs": "Athiémé"
+ },
+ {
+  "name": "Bopa",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.5874,
+  "lon": 1.9654,
+  "geocodedAs": "Bopa"
+ },
+ {
+  "name": "Comè",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.408,
+  "lon": 1.882,
+  "geocodedAs": "manuel, coordonnées approximatives"
+ },
+ {
+  "name": "Grand-Popo",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.2804,
+  "lon": 1.8225,
+  "geocodedAs": "Grand-Popo"
+ },
+ {
+  "name": "Houéyogbé",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.4507,
+  "lon": 1.9216,
+  "geocodedAs": "Houéyogbé"
+ },
+ {
+  "name": "Lokossa",
+  "department": "Mono",
+  "pole": 7,
+  "lat": 6.6387,
+  "lon": 1.7167,
+  "geocodedAs": "Lokossa"
+ },
+ {
+  "name": "Adjarra",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.5344,
+  "lon": 2.6683,
+  "geocodedAs": "Adjarra"
+ },
+ {
+  "name": "Adjohoun",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.711,
+  "lon": 2.494,
+  "geocodedAs": "manuel, coordonnées approximatives"
+ },
+ {
+  "name": "Aguégués",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.4806,
+  "lon": 2.5474,
+  "geocodedAs": "Aguegue"
+ },
+ {
+  "name": "Akpro-Missérété",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.5587,
+  "lon": 2.5906,
+  "geocodedAs": "Missérété"
+ },
+ {
+  "name": "Avrankou",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.5559,
+  "lon": 2.6512,
+  "geocodedAs": "Avrankou"
+ },
+ {
+  "name": "Bonou",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.9068,
+  "lon": 2.4453,
+  "geocodedAs": "Bonou"
+ },
+ {
+  "name": "Dangbo",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.5847,
+  "lon": 2.5499,
+  "geocodedAs": "Dangbo"
+ },
+ {
+  "name": "Porto-Novo",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.4965,
+  "lon": 2.6036,
+  "geocodedAs": "Porto-Novo"
+ },
+ {
+  "name": "Sèmè-Kpodji",
+  "department": "Ouémé",
+  "pole": 7,
+  "lat": 6.4235,
+  "lon": 2.5846,
+  "geocodedAs": "Sèmè-Podji"
+ },
+ {
+  "name": "Adja-Ouèrè",
+  "department": "Plateau",
+  "pole": 6,
+  "lat": 7.0023,
+  "lon": 2.6059,
+  "geocodedAs": "Adjaouere"
+ },
+ {
+  "name": "Ifangni",
+  "department": "Plateau",
+  "pole": 6,
+  "lat": 6.649,
+  "lon": 2.72,
+  "geocodedAs": "manuel, coordonnées approximatives"
+ },
+ {
+  "name": "Kétou",
+  "department": "Plateau",
+  "pole": 6,
+  "lat": 7.3633,
+  "lon": 2.5998,
+  "geocodedAs": "Kétou"
+ },
+ {
+  "name": "Pobè",
+  "department": "Plateau",
+  "pole": 6,
+  "lat": 6.9801,
+  "lon": 2.6649,
+  "geocodedAs": "Pobè"
+ },
+ {
+  "name": "Sakété",
+  "department": "Plateau",
+  "pole": 6,
+  "lat": 6.7362,
+  "lon": 2.6587,
+  "geocodedAs": "Sakété"
+ },
+ {
+  "name": "Abomey",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.1829,
+  "lon": 1.9912,
+  "geocodedAs": "Abomey"
+ },
+ {
+  "name": "Agbangnizoun",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.0676,
+  "lon": 1.9737,
+  "geocodedAs": "Agbangnizoun"
+ },
+ {
+  "name": "Bohicon",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.1783,
+  "lon": 2.0667,
+  "geocodedAs": "Bohicon"
+ },
+ {
+  "name": "Covè",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.221,
+  "lon": 2.3402,
+  "geocodedAs": "Covè"
+ },
+ {
+  "name": "Djidja",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.3444,
+  "lon": 1.9345,
+  "geocodedAs": "Djidja"
+ },
+ {
+  "name": "Ouinhi",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.0841,
+  "lon": 2.4834,
+  "geocodedAs": "Ouinhi"
+ },
+ {
+  "name": "Za-Kpota",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.218,
+  "lon": 2.2,
+  "geocodedAs": "manuel, coordonnées approximatives"
+ },
+ {
+  "name": "Zagnanado",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.221,
+  "lon": 2.3834,
+  "geocodedAs": "Zagnanado"
+ },
+ {
+  "name": "Zogbodomey",
+  "department": "Zou",
+  "pole": 5,
+  "lat": 7.0672,
+  "lon": 2.1176,
+  "geocodedAs": "Zogbodome"
+ }
+]

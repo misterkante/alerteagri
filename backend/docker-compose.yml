@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alerteagri
+      POSTGRES_PASSWORD: alerteagri
+      POSTGRES_DB: alerteagri
+    ports:
+      - "5437:5432"
+    volumes:
+      - alerteagri_db:/var/lib/postgresql/data
+
+volumes:
+  alerteagri_db:

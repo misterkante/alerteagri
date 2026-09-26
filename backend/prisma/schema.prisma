@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PRODUCER
+  BUYER
+  ADVISOR
+  AGENT
+  COMMUNE
+  ADMIN
+}
+
+enum Zone {
+  NORD
+  SUD
+}
+
+enum AlertKind {
+  HEAVY_RAIN
+  DRY_SPELL
+  HEAT
+  DISEASE_HUMIDITY
+  PEST_CLUSTER
+  POSTHARVEST
+}
+
+enum AlertStatus {
+  OPEN
+  CLOSED
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  READ
+}
+
+enum ReportStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+enum ContentKind {
+  FICHE_LUTTE
+  REGLEMENTATION
+  CALENDRIER
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum InputStatus {
+  HOMOLOGATED
+  NOT_HOMOLOGATED
+}
+
+model Commune {
+  id         String @id
+  name       String @unique
+  department String
+  pole       Int
+  lat        Float
+  lon        Float
+  geoSource  String
+  zone       Zone
+
+  users           User[]
+  weather         WeatherDaily[]
+  alerts          Alert[]
+  reports         PestReport[]
+  listings        Listing[]
+  taxRates        TaxRate[]
+  taxPayments     TaxPayment[]
+  parcels         Parcel[]
+  harvests        Harvest[]
+  referencePrices ReferencePrice[]
+}
+
+model Crop {
+  id            String  @id
+  name          String
+  cashCrop      Boolean @default(false)
+  exportBanned  Boolean @default(false)
+  yieldKgPerHa  Int
+  aflatoxinRisk Boolean @default(false)
+
+  windows         CropWindow[]
+  reports         PestReport[]
+  listings        Listing[]
+  taxRates        TaxRate[]
+  parcels         Parcel[]
+  harvests        Harvest[]
+  referencePrices ReferencePrice[]
+}
+
+model CropWindow {
+  id        String @id @default(cuid())
+  cropId    String
+  zone      Zone
+  season    Int
+  startMmDd String
+  endMmDd   String
+  crop      Crop   @relation(fields: [cropId], references: [id])
+
+  @@unique([cropId, zone, season])
+}
+
+model User {
+  id          String   @id @default(cuid())
+  phone       String   @unique
+  name        String
+  pinHash     String
+  role        Role     @default(PRODUCER)
+  communeId   String
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  commune       Commune        @relation(fields: [communeId], references: [id])
+  notifications Notification[]
+  parcels       Parcel[]
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  actingForId String?
+  action      String
+  entity      String
+  entityId    String?
+  data        Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+model WeatherDaily {
+  id         String   @id @default(cuid())
+  communeId  String
+  date       DateTime @db.Date
+  rainMm     Float
+  tmaxC      Float
+  humidity   Float
+  et0Mm      Float
+  isForecast Boolean
+  fetchedAt  DateTime @default(now())
+  commune    Commune  @relation(fields: [communeId], references: [id])
+
+  @@unique([communeId, date])
+}
+
+model WeatherRun {
+  id         String    @id @default(cuid())
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  communes   Int       @default(0)
+  error      String?
+}
+
+model AlertRule {
+  id         String    @id
+  kind       AlertKind
+  label      String
+  threshold  Float
+  windowDays Int
+  neighborKm Int       @default(0)
+  message    String
+  active     Boolean   @default(true)
+  updatedAt  DateTime  @updatedAt
+  alerts     Alert[]
+}
+
+model Alert {
+  id            String         @id @default(cuid())
+  kind          AlertKind
+  communeId     String
+  ruleId        String
+  periodKey     String
+  cropId        String?
+  measured      Float
+  threshold     Float
+  message       String
+  status        AlertStatus    @default(OPEN)
+  firstSignalAt DateTime
+  createdAt     DateTime       @default(now())
+  closedAt      DateTime?
+  closedById    String?
+  commune       Commune        @relation(fields: [communeId], references: [id])
+  rule          AlertRule      @relation(fields: [ruleId], references: [id])
+  notifications Notification[]
+
+  @@unique([ruleId, communeId, periodKey])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  alertId   String
+  userId    String
+  channel   String             @default("SMS")
+  body      String
+  status    NotificationStatus @default(QUEUED)
+  attempts  Int                @default(0)
+  sentAt    DateTime?
+  readAt    DateTime?
+  action    String?
+  createdAt DateTime           @default(now())
+  alert     Alert              @relation(fields: [alertId], references: [id])
+  user      User               @relation(fields: [userId], references: [id])
+
+  @@unique([alertId, userId])
+}
+
+model PestReport {
+  id            String       @id @default(cuid())
+  clientId      String       @unique
+  reporterId    String
+  actingForId   String?
+  communeId     String
+  cropId        String
+  symptom       String
+  lat           Float?
+  lon           Float?
+  status        ReportStatus @default(PENDING)
+  validatedById String?
+  validatedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  commune       Commune      @relation(fields: [communeId], references: [id])
+  crop          Crop         @relation(fields: [cropId], references: [id])
+}
+
+model Content {
+  id          String           @id @default(cuid())
+  kind        ContentKind
+  title       String
+  body        String
+  pictogram   String
+  officialRef String?
+  status      ContentStatus    @default(DRAFT)
+  version     Int              @default(1)
+  updatedAt   DateTime         @updatedAt
+  versions    ContentVersion[]
+  audios      ContentAudio[]
+}
+
+model ContentVersion {
+  id        String   @id @default(cuid())
+  contentId String
+  version   Int
+  title     String
+  body      String
+  authorId  String
+  createdAt DateTime @default(now())
+  content   Content  @relation(fields: [contentId], references: [id])
+}
+
+model ContentAudio {
+  id        String   @id @default(cuid())
+  contentId String
+  lang      String
+  mime      String
+  bytes     Int
+  data      Bytes
+  createdAt DateTime @default(now())
+  content   Content  @relation(fields: [contentId], references: [id])
+
+  @@unique([contentId, lang])
+}
+
+model InputProduct {
+  id           String      @id @default(cuid())
+  name         String
+  normalized   String      @unique
+  status       InputStatus
+  source       String
+  alternative  String?
+  illustrative Boolean     @default(false)
+}
+
+model Harvest {
+  id          String   @id @default(cuid())
+  userId      String
+  communeId   String
+  cropId      String
+  harvestDate DateTime @db.Date
+  advice      String
+  createdAt   DateTime @default(now())
+  commune     Commune  @relation(fields: [communeId], references: [id])
+  crop        Crop     @relation(fields: [cropId], references: [id])
+}
+
+model ReferencePrice {
+  id           String   @id @default(cuid())
+  cropId       String
+  communeId    String
+  pricePerKg   Int
+  source       String
+  observedAt   DateTime
+  illustrative Boolean  @default(true)
+  crop         Crop     @relation(fields: [cropId], references: [id])
+  commune      Commune  @relation(fields: [communeId], references: [id])
+}
+
+model Listing {
+  id            String   @id @default(cuid())
+  clientId      String   @unique
+  sellerId      String
+  cropId        String
+  communeId     String
+  quantityKg    Int
+  pricePerKg    Int
+  forExport     Boolean  @default(false)
+  exportLicense String?
+  status        String   @default("OPEN")
+  createdAt     DateTime @default(now())
+  crop          Crop     @relation(fields: [cropId], references: [id])
+  commune       Commune  @relation(fields: [communeId], references: [id])
+  orders        Order[]
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  clientId   String      @unique
+  listingId  String
+  buyerId    String
+  quantityKg Int
+  status     String      @default("PENDING")
+  createdAt  DateTime    @default(now())
+  listing    Listing     @relation(fields: [listingId], references: [id])
+  taxPayment TaxPayment?
+}
+
+model TaxRate {
+  id           String  @id @default(cuid())
+  communeId    String
+  cropId       String
+  fcfaPer100Kg Int
+  illustrative Boolean @default(true)
+  commune      Commune @relation(fields: [communeId], references: [id])
+  crop         Crop    @relation(fields: [cropId], references: [id])
+
+  @@unique([communeId, cropId])
+}
+
+model TaxPayment {
+  id          String   @id @default(cuid())
+  receiptId   String   @unique
+  clientId    String   @unique
+  communeId   String
+  cropId      String
+  quantityKg  Int
+  amountFcfa  Int
+  orderId     String?  @unique
+  collectorId String?
+  signature   String
+  paidAt      DateTime @default(now())
+  commune     Commune  @relation(fields: [communeId], references: [id])
+  order       Order?   @relation(fields: [orderId], references: [id])
+}
+
+model Parcel {
+  id        String   @id @default(cuid())
+  ownerId   String
+  communeId String
+  cropId    String
+  areaHa    Float
+  lat       Float
+  lon       Float
+  createdAt DateTime @default(now())
+  owner     User     @relation(fields: [ownerId], references: [id])
+  commune   Commune  @relation(fields: [communeId], references: [id])
+  crop      Crop     @relation(fields: [cropId], references: [id])
+  lots      Lot[]
+}
+
+model Lot {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  parcelId    String
+  harvestDate DateTime @db.Date
+  weightKg    Int
+  humidityPct Float?
+  createdAt   DateTime @default(now())
+  parcel      Parcel   @relation(fields: [parcelId], references: [id])
+}

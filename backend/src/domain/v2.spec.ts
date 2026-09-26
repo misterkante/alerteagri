@@ -1,4 +1,11 @@
-import { cropSteps, waterBalance, droughtIndex, CROP_CYCLES } from './season';
+import {
+  cropSteps,
+  waterBalance,
+  droughtIndex,
+  CROP_CYCLES,
+  cropKc,
+  KC,
+} from './season';
 import { famewsCsv, sniffImage } from './exports';
 
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -74,6 +81,70 @@ describe('F-18 water balance', () => {
       level: 'INCONNU',
       days: 0,
     });
+  });
+});
+
+describe('KI-019 crop water need (FAO-56, ETc = Kc x ET0)', () => {
+  it('every crop with a cycle has its coefficients', () => {
+    expect(Object.keys(KC).sort()).toStrictEqual(
+      Object.keys(CROP_CYCLES).sort(),
+    );
+  });
+
+  it('follows the four stages: flat, rising, peak, falling', () => {
+    // Maize, 100 days: initial 20, development 30, mid-season 30, late 20.
+    expect(cropKc('mais', 0)).toBe(0.3);
+    expect(cropKc('mais', 19)).toBe(0.3);
+    expect(cropKc('mais', 35)).toBeCloseTo(0.75, 5);
+    expect(cropKc('mais', 50)).toBe(1.2);
+    expect(cropKc('mais', 79)).toBe(1.2);
+    expect(cropKc('mais', 90)).toBeCloseTo(0.9, 5);
+    expect(cropKc('mais', 100)).toBe(0.6);
+    expect(cropKc('mais', 140)).toBe(0.6);
+  });
+
+  it('every crop has a plausible coefficient on every day, highest at mid-season', () => {
+    for (const [crop, { days: length }] of Object.entries(CROP_CYCLES)) {
+      const curve = Array.from({ length: length + 1 }, (_, day) =>
+        cropKc(crop, day),
+      );
+      for (const kc of curve) {
+        expect(kc).toBeGreaterThanOrEqual(0.3);
+        expect(kc).toBeLessThanOrEqual(1.2);
+      }
+      expect(Math.max(...curve)).toBe(KC[crop][1]);
+      expect(cropKc(crop, Math.round(length / 2))).toBe(KC[crop][1]);
+    }
+  });
+
+  it('a crop without coefficients keeps the reference evapotranspiration', () => {
+    expect(cropKc('inconnue', 30)).toBe(1);
+  });
+
+  it('young maize needs less water than a crop at its peak', () => {
+    const dry = (start: string, n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        date: new Date(d(start).getTime() + i * 86400000),
+        rainMm: 0,
+        et0Mm: 4,
+      }));
+    const young = waterBalance(
+      dry('2026-06-01', 10),
+      d('2026-06-01'),
+      d('2026-06-10'),
+      'mais',
+    );
+    expect(young.balanceMm).toBe(-12);
+    expect(young.level).toBe('NORMAL');
+    const peak = waterBalance(
+      dry('2026-07-21', 10),
+      d('2026-06-01'),
+      d('2026-07-30'),
+      'mais',
+    );
+    expect(peak.balanceMm).toBe(-48);
+    expect(peak.level).toBe('SURVEILLER');
+    expect(peak.kc).toBe(1.2);
   });
 });
 

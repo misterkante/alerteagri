@@ -154,9 +154,10 @@ export class TraceService {
       orderBy: { date: 'asc' },
     });
     return {
-      ...waterBalance(days, p.sownAt, now),
+      ...waterBalance(days, p.sownAt, now, p.cropId),
       sownAt: p.sownAt,
-      source: 'Open-Meteo (pluie et ET0 de la commune)',
+      source:
+        'Open-Meteo (pluie et ET0 de la commune) ; besoins de la culture selon FAO-56 (Kc par stade)',
     };
   }
 

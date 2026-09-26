@@ -63,8 +63,9 @@ function ParcelDetail({ parcel }) {
           </p>
           {water.balanceMm !== null && (
             <p className="text-sm">
-              Bilan pluie moins évaporation depuis le semis : <strong className="tabular-nums">{water.balanceMm} mm</strong> sur{' '}
-              {water.days} jours.
+              Bilan pluie moins besoins en eau de la culture depuis le semis :{' '}
+              <strong className="tabular-nums">{fmtNum(water.balanceMm, 1)} mm</strong> sur {water.days} jours
+              {water.kc ? ` (coefficient cultural du jour : ${fmtNum(water.kc, 2)})` : ''}.
             </p>
           )}
           <p className="mt-1 text-xs">{water.source ?? water.reason}</p>

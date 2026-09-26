@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+  # Test-only values: the CI database is created for the run and destroyed after it.
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/alerteagri
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/alerteagri
+  JWT_SECRET: ci-jwt-secret-not-used-anywhere-else
+  RECEIPT_SECRET: ci-receipt-secret-not-used-anywhere-else
+  SEED_STAFF_PIN: '4821'
+
+jobs:
+  static:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix backend ci
+          npm --prefix frontend ci
+      - name: Commit messages
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+      - name: Commit messages (push)
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: npx commitlint --from ${{ github.event.before }} --to ${{ github.sha }}
+      - name: No secret in the tree
+        run: git ls-files -z | xargs -0 node scripts/check-secrets.mjs
+      - name: Backend lint
+        run: npm --prefix backend run lint:check
+      - name: Types (backend and browser tests)
+        run: npm run typecheck
+      - name: Backend unit tests
+        run: npm --prefix backend test -- --ci
+      - name: Frontend lint and format
+        run: |
+          npm --prefix frontend run lint
+          npm --prefix frontend run format:check
+      - name: Builds
+        run: npm run build
+
+  api-e2e:
+    name: API end-to-end (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: alerteagri
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm --prefix backend ci
+      - name: Migrations apply on an empty database
+        working-directory: backend
+        run: npx prisma migrate deploy
+      - name: Schema and migrations agree
+        working-directory: backend
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      - name: End-to-end tests
+        run: npm --prefix backend run test:e2e -- --ci
+
+  web-e2e:
+    name: Browser journeys and accessibility (Playwright, axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: alerteagri
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix backend ci
+          npm --prefix frontend ci
+      - name: Database
+        working-directory: backend
+        run: |
+          npx prisma migrate deploy
+          npm run seed
+      - name: Browser
+        run: npx playwright install --with-deps chromium
+      - name: Journeys and WCAG 2.1 AA, mobile and desktop, light and dark
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

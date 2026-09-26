@@ -1,0 +1,24 @@
+{
+  "name": "alerteagri",
+  "private": true,
+  "description": "AlerteAgri : outillage qualité du dépôt (hooks git, conventions de commit, tests end-to-end et accessibilité)",
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm --prefix backend run lint:check && npm --prefix frontend run lint",
+    "typecheck": "npm --prefix backend run typecheck && tsc -p tsconfig.json",
+    "test": "npm --prefix backend test",
+    "test:e2e:api": "npm --prefix backend run test:e2e",
+    "test:e2e:web": "playwright test",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.20.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "typescript": "~5.9.0"
+  }
+}

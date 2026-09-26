@@ -1,0 +1,8 @@
+# Same gate as CI, minus the database-backed suites: a push that would fail CI fails here first.
+set -e
+npm --prefix backend run -s lint:check
+npm run -s typecheck
+npm --prefix backend test -- --silent
+npm --prefix frontend run -s lint
+npm --prefix frontend run -s format:check
+npm --prefix frontend run -s build

@@ -3,7 +3,11 @@ dist
 coverage
 .env
 .claude
-reports
+/reports/
+/backend/reports/
 .stryker-tmp
 .vercel
 .env*
+e2e/.auth
+playwright-report
+test-results

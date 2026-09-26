@@ -220,7 +220,9 @@ async function main() {
       lon: c.lon,
       geoSource: c.geocodedAs.startsWith('manuel')
         ? 'approximatif (saisie manuelle)'
-        : 'Open-Meteo geocoding',
+        : c.geocodedAs.startsWith('OpenStreetMap')
+          ? 'OpenStreetMap (Nominatim), © contributeurs OpenStreetMap, ODbL'
+          : 'Open-Meteo geocoding',
       zone: (c.lat >= 8.5 ? 'NORD' : 'SUD') as Zone,
     };
     await prisma.commune.upsert({

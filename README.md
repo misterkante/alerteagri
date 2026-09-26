@@ -15,6 +15,8 @@
 
 Sources et niveaux de preuve : [`docs/JUSTIFICATION_RECHERCHE.md`](docs/JUSTIFICATION_RECHERCHE.md).
 
+Données tierces : météo et géocodage [Open-Meteo](https://open-meteo.com) (CC BY 4.0) ; coordonnées de cinq chefs-lieux © contributeurs [OpenStreetMap](https://www.openstreetmap.org/copyright), sous licence ODbL ; voix en fon et yoruba [229langues](https://api229langues.vercel.app).
+
 ## Ce que fait AlerteAgri
 
 | Pour | Service | Canal |

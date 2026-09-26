@@ -307,9 +307,9 @@
   "name": "Djakotomey",
   "department": "Couffo",
   "pole": 5,
-  "lat": 6.9,
-  "lon": 1.72,
-  "geocodedAs": "manuel, coordonnées approximatives"
+  "lat": 6.902,
+  "lon": 1.7179,
+  "geocodedAs": "OpenStreetMap (Nominatim), chef-lieu"
  },
  {
   "name": "Dogbo",
@@ -403,9 +403,9 @@
   "name": "Comè",
   "department": "Mono",
   "pole": 7,
-  "lat": 6.408,
-  "lon": 1.882,
-  "geocodedAs": "manuel, coordonnées approximatives"
+  "lat": 6.4042,
+  "lon": 1.8841,
+  "geocodedAs": "OpenStreetMap (Nominatim), chef-lieu"
  },
  {
   "name": "Grand-Popo",
@@ -443,9 +443,9 @@
   "name": "Adjohoun",
   "department": "Ouémé",
   "pole": 7,
-  "lat": 6.711,
-  "lon": 2.494,
-  "geocodedAs": "manuel, coordonnées approximatives"
+  "lat": 6.7175,
+  "lon": 2.4774,
+  "geocodedAs": "OpenStreetMap (Nominatim), chef-lieu"
  },
  {
   "name": "Aguégués",
@@ -515,9 +515,9 @@
   "name": "Ifangni",
   "department": "Plateau",
   "pole": 6,
-  "lat": 6.649,
-  "lon": 2.72,
-  "geocodedAs": "manuel, coordonnées approximatives"
+  "lat": 6.6806,
+  "lon": 2.7183,
+  "geocodedAs": "OpenStreetMap (Nominatim), chef-lieu"
  },
  {
   "name": "Kétou",
@@ -595,9 +595,9 @@
   "name": "Za-Kpota",
   "department": "Zou",
   "pole": 5,
-  "lat": 7.218,
-  "lon": 2.2,
-  "geocodedAs": "manuel, coordonnées approximatives"
+  "lat": 7.2309,
+  "lon": 2.217,
+  "geocodedAs": "OpenStreetMap (Nominatim), chef-lieu"
  },
  {
   "name": "Zagnanado",

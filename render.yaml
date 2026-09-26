@@ -10,9 +10,9 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: alerteagri-db
-          property: connectionString
+        sync: false
+      - key: DIRECT_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: RECEIPT_SECRET
@@ -30,7 +30,3 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
 
-databases:
-  - name: alerteagri-db
-    plan: free
-    region: frankfurt

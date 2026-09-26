@@ -1,37 +1,16 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { missingEnv } from './common/env';
 
 export function configure(app: INestApplication): INestApplication {
-  // Temporary diagnostic: how the host passes the client address (removed once trust proxy is set).
-  app.use(
-    (
-      req: {
-        headers: Record<string, unknown>;
-        socket: { remoteAddress?: string };
-        path: string;
-      },
-      _res: unknown,
-      next: () => void,
-    ) => {
-      if (req.path === '/health' && req.headers['x-ip-diag'] === 'alerteagri')
-        // eslint-disable-next-line no-console
-        console.log(
-          'IPDIAG',
-          JSON.stringify({
-            xff: req.headers['x-forwarded-for'],
-            real: req.headers['x-real-ip'],
-            cf: req.headers['cf-connecting-ip'],
-            tci: req.headers['true-client-ip'],
-            remote: req.socket.remoteAddress,
-          }),
-        );
-      next();
-    },
-  );
+  // Render adds three hops (local proxy, internal network, Cloudflare) in front of the app, and a
+  // client can prepend any address it likes. Trusting exactly those hops yields the real client.
+  const hops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
+  if (hops > 0) (app as NestExpressApplication).set('trust proxy', hops);
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   const origins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
     .split(',')

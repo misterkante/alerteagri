@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { accountThrottler } from './auth/login-throttle';
+import { requestTracker } from './common/request-tracker';
 import { AuditModule } from './common/audit.module';
 import { ReferentialModule } from './referential/referential.module';
 import { WeatherModule } from './weather/weather.module';
@@ -30,6 +31,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
         ttl: 60_000,
         // Read on each request, like the other limits, so tests and hosting can set it late.
         limit: () => Number(process.env.RATE_LIMIT_PER_MIN ?? 120),
+        getTracker: requestTracker,
       },
       accountThrottler,
     ]),

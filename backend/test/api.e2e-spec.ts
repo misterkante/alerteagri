@@ -23,6 +23,8 @@ process.env.DEMO_MODE = 'true';
 process.env.RATE_LIMIT_PER_MIN = '100000';
 process.env.LOGIN_LIMIT_PER_MIN = '12';
 process.env.LOGIN_IP_LIMIT_PER_MIN = '40';
+// Tests call the app directly: one hop, like a single reverse proxy.
+process.env.TRUST_PROXY_HOPS = '1';
 process.env.VOICE_LIMIT_PER_MIN = '8';
 process.env.SEED_STAFF_PIN = '4821';
 
@@ -1554,6 +1556,12 @@ describe('AlerteAgri API (e2e, real database)', () => {
           ).status,
         );
       expect(codes).toContain(429);
+      // Another client behind the proxy keeps its own budget: the cap is per real address.
+      await http()
+        .post('/auth/login')
+        .set('X-Forwarded-For', '203.0.113.7')
+        .send({ phone: '01 97 00 00 04', pin: '1234' })
+        .expect(201);
     });
   });
 });

@@ -10,6 +10,7 @@ import { WeatherService } from '../src/weather/weather.service';
 import { AlertsService } from '../src/alerts/alerts.service';
 import { SMS_PROVIDER } from '../src/alerts/sms.provider';
 import { signReceipt } from '../src/domain/tax';
+import { DROUGHT_WINDOW_DAYS } from '../src/dashboard/dashboard.module';
 
 process.env.RECEIPT_SECRET = 'test-receipt-secret-0123456789';
 process.env.USSD_SECRET = 'test-ussd-secret';
@@ -1169,22 +1170,55 @@ describe('AlerteAgri API (e2e, real database)', () => {
     });
 
     it('F-24 AC1-2 drought index per commune, labelled as a simulation, reproducible', async () => {
-      const a = await http()
-        .get('/dashboard/drought')
-        .set(as('agent'))
-        .expect(200);
-      const b = await http()
-        .get('/dashboard/drought')
-        .set(as('agent'))
-        .expect(200);
-      expect(a.body.simulation).toBe(true);
-      expect(a.body.communes.length).toBeGreaterThan(0);
-      expect(a.body.communes).toEqual(b.body.communes);
-      expect(
-        a.body.communes.every(
-          (c: { index: number }) => c.index >= 0 && c.index <= 1,
-        ),
-      ).toBe(true);
+      // Own readings, so the test does not depend on a weather fetch having run on this database.
+      const today = new Date(
+        new Date().toISOString().slice(0, 10) + 'T00:00:00Z',
+      );
+      const days = Array.from(
+        { length: DROUGHT_WINDOW_DAYS },
+        (_, i) => new Date(today.getTime() - (i + 1) * 86400000),
+      );
+      const rows = days.flatMap((date) => [
+        { communeId: 'kandi', date, rainMm: 0, et0Mm: 6 },
+        { communeId: 'ouidah', date, rainMm: 25, et0Mm: 3 },
+      ]);
+      const saved = await prisma.weatherDaily.findMany({
+        where: { communeId: { in: ['kandi', 'ouidah'] }, date: { in: days } },
+      });
+      for (const r of rows)
+        await prisma.weatherDaily.upsert({
+          where: { communeId_date: { communeId: r.communeId, date: r.date } },
+          update: { ...r, isForecast: false },
+          create: { ...r, tmaxC: 33, humidity: 50, isForecast: false },
+        });
+      try {
+        const a = await http()
+          .get('/dashboard/drought')
+          .set(as('agent'))
+          .expect(200);
+        const b = await http()
+          .get('/dashboard/drought')
+          .set(as('agent'))
+          .expect(200);
+        expect(a.body.simulation).toBe(true);
+        expect(a.body.communes).toStrictEqual(b.body.communes);
+        expect(
+          a.body.communes.every(
+            (c: { index: number }) => c.index >= 0 && c.index <= 1,
+          ),
+        ).toBe(true);
+        const find = (id: string) =>
+          a.body.communes.find(
+            (c: { communeId: string }) => c.communeId === id,
+          );
+        expect(find('kandi').index).toBeGreaterThan(find('ouidah').index);
+        expect(find('kandi').rainMm).toBe(0);
+      } finally {
+        await prisma.weatherDaily.deleteMany({
+          where: { communeId: { in: ['kandi', 'ouidah'] }, date: { in: days } },
+        });
+        for (const s of saved) await prisma.weatherDaily.create({ data: s });
+      }
     });
   });
 

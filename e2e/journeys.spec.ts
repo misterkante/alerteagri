@@ -183,3 +183,22 @@ test.describe('F-12 / F-13 public verification', () => {
     await expect(page.locator('body')).not.toContainText(/\+229\d{8}/);
   });
 });
+
+test.describe('F-08 local-language voices', () => {
+  test('a synthetic voice is labelled, and the text it reads is available in its language', async ({ page }) => {
+    await page.route('**/contents', async (route) => {
+      const res = await route.fetch();
+      const list = await res.json();
+      list[0].audios = [
+        { lang: 'fon', bytes: 1000, origin: 'SYNTHETIC', transcript: 'Wema ɖé ɖò fɔn mɛ', machineTranslated: true, provider: '229langues' },
+      ];
+      await route.fulfill({ response: res, json: list });
+    });
+    await page.goto('/fiches');
+    await expect(page.getByText('voix de synthèse · 229langues')).toBeVisible();
+    await page.getByText(/^Texte lu \(traduction automatique/).click();
+    const read = page.getByText('Wema ɖé ɖò fɔn mɛ');
+    await expect(read).toBeVisible();
+    await expect(read).toHaveAttribute('lang', 'fon');
+  });
+});

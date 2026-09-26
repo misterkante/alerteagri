@@ -28,7 +28,7 @@ import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, SpeakButton, Stat, Ti
 import { fmtDate } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
-import { HOME_BY_ROLE, LANG_LABEL } from '../lib/constants';
+import { HOME_BY_ROLE, LANG_LABEL, LANG_TAG } from '../lib/constants';
 
 export function Home() {
   const [session] = useSession();
@@ -709,7 +709,12 @@ export function Sheets() {
                     <SpeakButton text={`${c.title}. ${c.body}`} label="Écouter en français" />
                     {c.audios.map((a) => (
                       <div key={a.lang} className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-semibold">{LANG_LABEL[a.lang] ?? a.lang}</span>
+                        <span className="text-sm font-semibold">
+                          {LANG_LABEL[a.lang] ?? a.lang}
+                          {a.origin === 'SYNTHETIC' && (
+                            <span className="badge ml-2 bg-warn-light text-warn">voix de synthèse · {a.provider}</span>
+                          )}
+                        </span>
                         <audio
                           controls
                           preload="none"
@@ -719,6 +724,16 @@ export function Sheets() {
                         >
                           <track kind="captions" srcLang="fr" label="Français" src={`${API_URL}/contents/${c.id}/captions.vtt`} default />
                         </audio>
+                        {a.origin === 'SYNTHETIC' && a.transcript && (
+                          <details className="text-sm">
+                            <summary className="cursor-pointer font-semibold">
+                              Texte lu{a.machineTranslated ? ' (traduction automatique, à faire valider par un locuteur)' : ''}
+                            </summary>
+                            <p className="mt-1" lang={LANG_TAG[a.lang]}>
+                              {a.transcript}
+                            </p>
+                          </details>
+                        )}
                       </div>
                     ))}
                   </div>

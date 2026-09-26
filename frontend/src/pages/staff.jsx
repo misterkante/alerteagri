@@ -14,6 +14,7 @@ import {
   Square,
   Sun,
   Upload,
+  Volume2,
   XCircle,
 } from 'lucide-react';
 import { api, newClientId, sendOrQueue } from '../api';
@@ -22,7 +23,7 @@ import { CROPS } from '../lib/crops';
 import { downloadWithAuth } from '../lib/download';
 import { fmtDate, fmtFcfa } from '../lib/format';
 import { useSession } from '../lib/session';
-import { LANG_LABEL } from '../lib/constants';
+import { LANG_LABEL, LANG_TAG } from '../lib/constants';
 
 const KIND_LABEL = {
   HEAVY_RAIN: 'Forte pluie',
@@ -881,6 +882,78 @@ function AudioRecorder({ contentId, onDone }) {
   );
 }
 
+// A speech model reads the sheet in a local language when nobody has recorded it yet; a recording by a person always wins.
+function VoiceGenerator({ contentId, audios, voices, onDone }) {
+  const [text, setText] = useState({});
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+  if (!voices) return null;
+  const generate = async (lang) => {
+    setBusy(lang);
+    setMsg('');
+    setError('');
+    try {
+      const r = await api(`/cms/contents/${contentId}/voice/${lang}`, { method: 'POST', body: text[lang] ? { text: text[lang] } : {} });
+      setMsg(`Voix ${LANG_LABEL[lang]} générée${r.machineTranslated ? ' à partir d’une traduction automatique' : ''}.`);
+      onDone();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+  return (
+    <div className="mt-3 rounded-xl bg-surface-raised p-3">
+      <p className="text-sm font-semibold">
+        Voix de synthèse ({voices.provider}) <Demo>à faire valider par un locuteur</Demo>
+      </p>
+      {!voices.configured && <p className="mt-1 text-sm text-soil-muted">Service de voix non configuré sur ce serveur.</p>}
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        {voices.voices.map((lang) => {
+          const recorded = audios.some((a) => a.lang === lang && a.origin === 'RECORDED');
+          const id = `voix-${contentId}-${lang}`;
+          return (
+            <div key={lang} className="space-y-2">
+              <label className="label" htmlFor={id}>
+                Texte en {LANG_LABEL[lang]} (facultatif, sinon traduction automatique)
+              </label>
+              <textarea
+                id={id}
+                className="input min-h-16"
+                lang={LANG_TAG[lang]}
+                maxLength={1000}
+                value={text[lang] ?? ''}
+                onChange={(e) => setText({ ...text, [lang]: e.target.value })}
+                disabled={recorded}
+              />
+              <button
+                className="btn-ghost w-full"
+                type="button"
+                disabled={!voices.configured || recorded || !!busy}
+                onClick={() => generate(lang)}
+              >
+                <Volume2 className="h-5 w-5" aria-hidden="true" />
+                {busy === lang
+                  ? 'Génération… (jusqu’à une minute)'
+                  : recorded
+                    ? `${LANG_LABEL[lang]} : enregistré par une personne`
+                    : `Générer la voix ${LANG_LABEL[lang]}`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {msg && (
+        <p className="mt-2 font-semibold text-leaf" role="status">
+          {msg}
+        </p>
+      )}
+      <ErrorNote error={error} />
+    </div>
+  );
+}
+
 const EMPTY = { kind: 'FICHE_LUTTE', title: '', body: '', pictogram: 'bug', officialRef: '', targetCrops: [] };
 
 export function Cms() {
@@ -892,7 +965,19 @@ export function Cms() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [voices, setVoices] = useState(null);
+  const canVoice = ['AGENT', 'ADMIN', 'ADVISOR'].includes(session?.user.role);
   const load = () => setReloadKey((k) => k + 1);
+  useEffect(() => {
+    if (!canVoice) return undefined;
+    let alive = true;
+    api('/cms/voices')
+      .then((v) => alive && setVoices(v))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [canVoice]);
   useEffect(() => {
     if (!session) return undefined;
     let alive = true;
@@ -1040,9 +1125,13 @@ export function Cms() {
             </div>
             {c.targetCrops?.length > 0 && <p className="mt-1 text-sm text-soil-muted">Cible : {c.targetCrops.map(cropName).join(', ')}</p>}
             <p className="mt-1 text-sm text-soil-muted">
-              Audios : {c.audios.length ? c.audios.map((a) => LANG_LABEL[a.lang] ?? a.lang).join(', ') : 'aucun'}
+              Audios :{' '}
+              {c.audios.length
+                ? c.audios.map((a) => `${LANG_LABEL[a.lang] ?? a.lang}${a.origin === 'SYNTHETIC' ? ' (synthèse)' : ''}`).join(', ')
+                : 'aucun'}
             </p>
             <AudioRecorder contentId={c.id} onDone={load} />
+            <VoiceGenerator contentId={c.id} audios={c.audios} voices={voices} onDone={load} />
           </article>
         ))}
       </div>

@@ -8,3 +8,6 @@ export const HOME_BY_ROLE = {
 };
 
 export const LANG_LABEL = { fon: 'Fon', yoruba: 'Yoruba', bariba: 'Bariba', dendi: 'Dendi', francais: 'Français' };
+
+// Language tags for the lang attribute, so screen readers switch voice (BCP 47).
+export const LANG_TAG = { fon: 'fon', yoruba: 'yo', bariba: 'bba', dendi: 'ddn', francais: 'fr' };

@@ -6,13 +6,13 @@
 
 | | |
 |---|---|
-| Features | F-01 à F-15 livrées (F-15 partielle : la création d'offre n'est pas mise en file hors ligne, KI-012) |
-| Tests | 50 tests des règles métier et 40 tests de bout en bout sur une vraie base PostgreSQL, tous verts |
-| Mutation (règles métier) | 341 mutants tués sur 361 (94 %) |
-| Failles réintroduites volontairement | 7 sur 7 détectées par les tests (escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN) |
-| Documentation vérifiée contre le code | `docs_check` : 0 erreur (11 packages secondaires sans diagramme de classes) |
+| Features | F-01 à F-24 livrées : 15 du périmètre initial et 9 de la V2 (F-16 à F-24) ; F-23 et F-24 sont des simulations assumées (KI-016, KI-017) |
+| Tests | 67 tests des règles métier et 53 tests de bout en bout sur une vraie base PostgreSQL, tous verts (120) |
+| Mutation (règles métier) | 557 mutants détectés sur 573 (97 %), après renforcement des tests V2 (80 % au premier passage) |
+| Failles réintroduites volontairement | 13 sur 13 détectées (V1 : escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN ; V2 : photo visible par tous, regroupement hors commune, rappel envoyé deux fois, rapprochement non limité à la commune, règle notifiée deux fois) ; 4 tests trop faibles révélés puis corrigés |
+| Documentation vérifiée contre le code | `docs_check` : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
 | Problèmes connus ouverts | 5 high, 5 medium, 4 low ; 1 corrigé (KI-008) |
-| Pentest | revue de sécurité sur le code et tests de bout en bout ; pas de pentest actif sur l'instance déployée (non vérifié) |
+| Pentest | API en production testée le 2026-09-26 (`docs/security/pentest-2026-09-26.md`) : aucune faille exploitable ; injections et fichier piégé bloqués en amont par le pare-feu de l'hébergeur, donc non testés côté application en ligne mais couverts en e2e |
 
 ## Critères d'acceptation
 
@@ -39,7 +39,16 @@ Statut : **verified** = prouvé par un test exécuté ; **partial** = une partie
 | F-13 Lot | AC1 à AC3 | verified | e2e : page publique sans nom ni téléphone, coordonnées arrondies, poids négatif refusé |
 | F-14 Tableau de bord | AC1 à AC6 | verified | e2e (périmètre commune, GDIZ) et capture à 360 px |
 | F-15 PWA | AC1, AC3 | verified | build PWA ; 90 Ko compressés au premier chargement ; 10 écrans à 360 px sans débordement ni erreur console (Playwright) |
-| F-15 | AC2 file hors ligne | partial | signalements, accusés et encaissements ; pas la création d'offre |
+| F-15 | AC2 file hors ligne | verified | signalements, accusés, encaissements et offres mis en file (build et code ; le mode avion testé sur le signalement) |
+| F-16 Photo | AC1, AC2 | verified | e2e : JPEG accepté, contenu non image refusé, visible par l'agent, 403 pour un autre producteur |
+| F-17 Étapes et rappels | AC1 à AC3 | verified | e2e : étapes calculées, rappels envoyés une fois (second passage : 0 dû, 0 envoyé), date de semis future refusée ; tests métier sur les 9 cycles |
+| F-18 Stress hydrique | AC1, AC2 | verified | tests métier (seuils -40 et -80 mm, bornes de dates) ; e2e : sans données, niveau INCONNU |
+| F-19 Règle ciblée | AC1, AC2 | verified | e2e : producteurs de soja notifiés une fois ; fiche sans cible : 0 notification |
+| F-20 Vente groupée | AC1, AC2 | verified | e2e : parts conservées, producteur hors commune refusé (403), export interdit refusé |
+| F-21 FAMEWS | AC1, AC2 | verified | tests métier sur le format CSV ; e2e : aucune donnée personnelle, 403 pour un producteur |
+| F-22 Rapprochement | AC1, AC2 | verified | e2e : un montant modifié en base est signalé invalide ; commune limitée à ses recettes |
+| F-23 Connecteur SIPI | AC1 | verified (simulé) | e2e : lots envoyés via l'adaptateur, journal marqué simulé, sans téléphone |
+| F-24 Sécheresse | AC1, AC2 | verified (simulation) | tests métier sur l'indice ; e2e : reproductible, indices entre 0 et 1 |
 
 ## Confiance
 

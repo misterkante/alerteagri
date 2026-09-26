@@ -22,6 +22,7 @@ process.env.USSD_SECRET = 'test-ussd-secret';
 process.env.DEMO_MODE = 'true';
 process.env.RATE_LIMIT_PER_MIN = '100000';
 process.env.LOGIN_LIMIT_PER_MIN = '12';
+process.env.LOGIN_IP_LIMIT_PER_MIN = '40';
 process.env.VOICE_LIMIT_PER_MIN = '8';
 process.env.SEED_STAFF_PIN = '4821';
 
@@ -188,6 +189,11 @@ describe('AlerteAgri API (e2e, real database)', () => {
         );
       expect(codes).toContain(429);
       expect(codes.filter((c) => c === 401).length).toBeLessThanOrEqual(12);
+      // KI-020: the lock is on that account, not on everyone behind the same address.
+      await http()
+        .post('/auth/login')
+        .send({ phone: '+22997000004', pin: '1234' })
+        .expect(201);
     });
   });
 
@@ -1428,6 +1434,22 @@ describe('AlerteAgri API (e2e, real database)', () => {
         r.body.crops.find((c: { cropId: string }) => c.cropId === 'soja')
           .capacityT,
       ).toBe(260000);
+    });
+  });
+
+  // Last on purpose: it spends the address's login budget for the rest of the minute.
+  describe('security: PIN spraying across accounts', () => {
+    it('one address trying many accounts is cut off', async () => {
+      const codes: number[] = [];
+      for (let i = 0; i < 45; i++)
+        codes.push(
+          (
+            await http()
+              .post('/auth/login')
+              .send({ phone: `+229970${String(10000 + i)}`, pin: '1234' })
+          ).status,
+        );
+      expect(codes).toContain(429);
     });
   });
 });

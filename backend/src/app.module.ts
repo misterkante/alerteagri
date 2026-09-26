@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { accountThrottler } from './auth/login-throttle';
 import { AuditModule } from './common/audit.module';
 import { ReferentialModule } from './referential/referential.module';
 import { WeatherModule } from './weather/weather.module';
@@ -24,7 +25,13 @@ import { IntegrationsModule } from './integrations/integrations.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([
-      { ttl: 60_000, limit: Number(process.env.RATE_LIMIT_PER_MIN ?? 120) },
+      {
+        name: 'default',
+        ttl: 60_000,
+        // Read on each request, like the other limits, so tests and hosting can set it late.
+        limit: () => Number(process.env.RATE_LIMIT_PER_MIN ?? 120),
+      },
+      accountThrottler,
     ]),
     PrismaModule,
     AuditModule,

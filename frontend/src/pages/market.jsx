@@ -15,6 +15,7 @@ export function Market() {
   const [listings, setListings] = useState([]);
   const [prices, setPrices] = useState([]);
   const [error, setError] = useState('');
+  const [refresh, setRefresh] = useState(0);
   const load = () => {
     api('/market/listings', { auth: false })
       .then(setListings)
@@ -60,7 +61,15 @@ export function Market() {
       <h2 className="section-title">Offres ouvertes ({listings.length})</h2>
       <div className="space-y-3">
         {listings.map((l) => (
-          <ListingRow key={l.id} l={l} canBuy={role === 'BUYER'} onDone={load} />
+          <ListingRow
+            key={l.id}
+            l={l}
+            canBuy={role === 'BUYER'}
+            onDone={() => {
+              load();
+              setRefresh((k) => k + 1);
+            }}
+          />
         ))}
         {!listings.length && (
           <div className="flex flex-col items-center px-6 py-10 text-center">
@@ -69,7 +78,7 @@ export function Market() {
           </div>
         )}
       </div>
-      {role === 'BUYER' && <MyOrders />}
+      {role === 'BUYER' && <MyOrders refresh={refresh} />}
       <p className="mt-6 text-[13px] text-soil-muted">
         Les places de marché partenaires peuvent se brancher sur l’API ouverte (
         <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>
@@ -240,7 +249,8 @@ function ListingRow({ l, canBuy, onDone }) {
   );
 }
 
-function MyOrders() {
+// Reloads whenever the market changes, so a reservation appears here at once.
+function MyOrders({ refresh }) {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const load = () =>
@@ -249,7 +259,7 @@ function MyOrders() {
       .catch((e) => setError(e.message));
   useEffect(() => {
     load();
-  }, []);
+  }, [refresh]);
   const pay = async (id) => {
     setError('');
     try {

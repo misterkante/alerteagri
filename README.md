@@ -24,7 +24,7 @@ Sources et niveaux de preuve : [`docs/JUSTIFICATION_RECHERCHE.md`](docs/JUSTIFIC
 | Producteur | Signaler un ravageur en deux gestes (culture, symptôme en pictogramme), même sans réseau | application, USSD |
 | Producteur | Conseil anti-aflatoxines après la récolte (sécher, couvrir, attendre) | application, SMS |
 | Producteur | « Ce pesticide est-il homologué ? » | application, USSD |
-| Producteur | Fiches pratiques et réglementaires lues à voix haute, avec l'audio enregistré en fon, yoruba, bariba ou dendi | application |
+| Producteur | Fiches pratiques et réglementaires lues à voix haute : en français par le téléphone, en fon et yoruba par une voix de synthèse signalée (229langues), et dans toute langue enregistrée par un conseiller (fon, yoruba, bariba, dendi) | application |
 | Producteur, acheteur | Offres, prix de référence avec leur source, blocage des exports interdits (soja, cajou bruts) | application, API ouverte |
 | Conseiller ATDA | Inscrit et accompagne ses producteurs, agit en leur nom (tracé), enregistre l'audio des fiches depuis son téléphone | application |
 | Agent ATDA | Valide les signalements, voit la carte des 77 communes, la boucle de chaque alerte (envoyés, lus, actions, délais), la valeur protégée et l'offre déclarée face aux capacités de la GDIZ | tableau de bord |
@@ -112,4 +112,4 @@ Déploiement : l'API et sa base sur Render (`render.yaml`), l'interface sur Verc
 
 ## Stack
 
-NestJS 11, Prisma, PostgreSQL (Supabase), React 18, Vite, Tailwind, PWA (Workbox), thème clair et sombre. Sécurité : helmet, CORS restreint, limitation de débit, validation stricte des entrées, rôles vérifiés côté serveur, journal d'audit, reçus signés par HMAC, fichiers audio validés par leur contenu.
+NestJS 11, Prisma, PostgreSQL (Supabase), React 18, Vite, Tailwind, PWA (Workbox), thème clair et sombre. Interface alignée sur la charte graphique du gouvernement béninois (Montserrat, vert du drapeau, filet tricolore), nombres et heures à la béninoise. Sécurité : helmet, CORS restreint, limitation de débit, validation stricte des entrées, rôles vérifiés côté serveur, journal d'audit, reçus signés par HMAC, fichiers audio validés par leur contenu.

@@ -7,13 +7,13 @@
 | | |
 |---|---|
 | Features | F-01 à F-24 livrées : 15 du périmètre initial et 9 de la V2 (F-16 à F-24) ; F-23 et F-24 sont des simulations assumées (KI-016, KI-017) |
-| Tests | 75 tests des règles métier, 54 tests de bout en bout de l'API sur une vraie base PostgreSQL, 170 tests navigateur (Playwright) : 26 parcours et 144 audits d'accessibilité ; tous verts |
+| Tests | 82 tests des règles métier, 59 tests de bout en bout de l'API sur une vraie base PostgreSQL, 172 tests navigateur (Playwright) : 28 parcours et 144 audits d'accessibilité ; tous verts |
 | Accessibilité | axe, WCAG 2.1 A et AA : 0 violation sur 18 écrans et 5 rôles, à 360 px et sur ordinateur, en clair et en sombre ; onglets et choix utilisables au clavier (motifs WAI-ARIA), sous-titres sur les fiches audio |
 | Qualité continue | hooks Husky (pre-commit, commit-msg, pre-push) et CI GitHub Actions en trois jobs ; TypeScript strict ; ESLint à 0 avertissement sur les deux applications |
 | Mutation (règles métier) | 557 mutants détectés sur 573 (97 %), après renforcement des tests V2 (80 % au premier passage) |
 | Failles réintroduites volontairement | 13 sur 13 détectées (V1 : escalade de rôle, action pour autrui hors commune, survente, USSD sans secret, fuite de position, reçu falsifié, force brute du PIN ; V2 : photo visible par tous, regroupement hors commune, rappel envoyé deux fois, rapprochement non limité à la commune, règle notifiée deux fois) ; 4 tests trop faibles révélés puis corrigés |
 | Documentation vérifiée contre le code | vérification automatique des diagrammes contre le code : 0 erreur, 0 avertissement ; les 17 packages ont leur diagramme |
-| Problèmes connus | 21 inscrits ; ouverts : 3 high, 7 medium, 8 low ; corrigés : KI-008, KI-011, KI-012 |
+| Problèmes connus | 23 inscrits ; ouverts : 3 high, 8 medium, 9 low ; corrigés : KI-008, KI-011, KI-012 |
 | Pentest | API en production testée le 2026-09-26 (`docs/security/pentest-2026-09-26.md`) : aucune faille exploitable ; injections et fichier piégé bloqués en amont par le pare-feu de l'hébergeur, donc non testés côté application en ligne mais couverts en e2e |
 
 ## Critères d'acceptation
@@ -77,6 +77,14 @@ Mise en place après une revue qui a relevé des erreurs de build et de lint lai
 - **Ce que les tests navigateur ont trouvé**, tous corrigés : un texte sous le contraste minimal ; un tableau défilant inaccessible au clavier ; l'écran des recettes qui renvoyait une erreur 500 masquée par l'interface, parce que `RECEIPT_SECRET` manquait ; l'API vérifie désormais au démarrage que ses secrets sont présents et refuse de démarrer sinon ; un producteur qui ouvrait l'écran des recettes déclenchait des appels refusés au lieu d'un message clair ; un tableau de bord sans session réduit à un bouton sans explication ; des onglets et des choix en tuiles sans navigation aux flèches.
 - **Mutation sur le nouveau module de sous-titres** : 90 % au premier passage ; deux tests manquants ajoutés, et une faiblesse trouvée au passage : `toEqual` ignore les éléments `undefined` d'un tableau, donc les 17 comparaisons de tableaux de l'API et des tests navigateur utilisent maintenant `toStrictEqual`. Résultat : 96,7 %, le seul mutant restant est équivalent (le texte est déjà nettoyé des espaces).
 - **Preuve que les nouveaux tests échouent** : clavier des onglets retiré, contrôle de rôle des recettes retiré, les deux tests correspondants passent au rouge ; code rétabli ensuite.
+
+## Dernier passage avant la présentation
+
+- **API NestJS** : chaque module est découpé selon la convention du framework (module, contrôleur, service, DTO). Aucun contrôleur n'accède plus à la base : les règles d'alerte, la déclaration de récolte, les barèmes, le journal d'interopérabilité, les comptes et le référentiel passent par leur service. Une injection Prisma inutilisée a été retirée, et les constantes dupliquées sont définies une seule fois.
+- **Charte graphique du gouvernement** : typographie Montserrat, auto-hébergée pour fonctionner hors ligne et afficher les lettres et tons du fon et du yoruba ; vert du drapeau ; filet vert, jaune et rouge du bloc-marque institutionnel. Ni armoiries ni nom de ministère : ils sont réservés à l'État. Le contraste AA est conservé en clair et en sombre (144 audits).
+- **Langues locales** : les fiches peuvent parler fon et yoruba grâce à 229langues. La voix est générée côté serveur, étiquetée « voix de synthèse », accompagnée du texte lu, et ne remplace jamais un enregistrement humain (KI-022, KI-023).
+- **Notation béninoise** : nombres en notation française et heures de Porto-Novo partout, y compris dans les SMS d'alerte (« 42,3 °C » et non « 42.3 °C »).
+- **Données de démonstration** : la production n'avait aucune offre au marché (celles vues en local venaient des tests). Huit offres des producteurs de démonstration sont désormais créées une fois, sans jamais être rouvertes.
 
 ## Base de données
 

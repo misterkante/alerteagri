@@ -83,7 +83,7 @@ export function Shell({ title, back = true, wide = false, children }) {
       >
         Aller au contenu
       </a>
-      <header className="sticky top-0 z-20 border-b border-soil-line bg-surface/95 backdrop-blur">
+      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur">
         <div className={`mx-auto flex items-center gap-2 px-4 py-2 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
           {back && (
             <button className="btn-ghost min-h-10 px-2 py-2" onClick={() => navigate(-1)} aria-label="Retour">
@@ -124,6 +124,12 @@ export function Shell({ title, back = true, wide = false, children }) {
               <LogOut className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
+        </div>
+        {/* Green, yellow, red rule of the national charter's brand block. */}
+        <div className="flex h-1" aria-hidden="true">
+          <span className="flex-1 bg-flag-green" />
+          <span className="flex-1 bg-flag-yellow" />
+          <span className="flex-1 bg-flag-red" />
         </div>
       </header>
       <main id="contenu" className={`page ${wide ? 'max-w-6xl' : ''}`}>

@@ -13,7 +13,7 @@ export default defineConfig({
         short_name: 'AlerteAgri',
         description: 'Alertes, conseils et marché pour les producteurs agricoles du Bénin',
         lang: 'fr',
-        theme_color: '#14532d',
+        theme_color: '#008751',
         background_color: '#f7f6f1',
         display: 'standalone',
         start_url: '/',
@@ -21,7 +21,14 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        // The French subset of Montserrat is precached; accented local-language subsets are cached on first use.
+        globPatterns: ['**/*.{js,css,html,svg}', 'assets/montserrat-base-*.woff2'],
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith('.woff2'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'polices', expiration: { maxEntries: 6, maxAgeSeconds: 365 * 86400 } },
+          },
           {
             urlPattern: ({ url }) => /\/(contents|crops|communes|weather|advice|market\/prices|inputs|alerts\/me)/.test(url.pathname),
             handler: 'NetworkFirst',

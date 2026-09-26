@@ -45,13 +45,13 @@ export function Home() {
   }, []);
   return (
     <Shell title="Accueil" back={false}>
-      <section className="overflow-hidden rounded-2xl bg-leaf-mid text-leaf-ink">
+      <section className="overflow-hidden rounded-2xl bg-flag-green text-white">
         <div className="p-6 sm:p-8">
           <p className="text-sm font-bold uppercase tracking-widest">Bénin · 77 communes surveillées</p>
           <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">
             Voir venir,
             <br />
-            agir à temps.
+            <span className="text-flag-yellow">agir à temps.</span>
           </h2>
           <p className="mt-3 max-w-xl text-base">
             Alertes météo et ravageurs, conseil de semis, fiches dans votre langue, marché et taxe communale. Pour tous les producteurs,
@@ -67,7 +67,7 @@ export function Home() {
                 Se connecter
               </Link>
             )}
-            <Link to="/telephone" className="btn border border-white/40 text-leaf-ink hover:bg-white/10">
+            <Link to="/telephone" className="btn border border-white/60 text-white hover:bg-white/10">
               <Phone className="h-5 w-5" aria-hidden="true" /> Téléphone USSD
             </Link>
           </div>

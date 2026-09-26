@@ -18,22 +18,8 @@ import {
 import { API_URL, getSession } from './api';
 import { CROPS } from './lib/crops';
 import { useOnline, useSession } from './lib/session';
-import { speak } from './lib/speech';
 import { STATUS } from './lib/status';
 import { Picto } from './picto';
-
-export function SpeakButton({ text, label = 'Écouter' }) {
-  return (
-    <button
-      type="button"
-      className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-surface px-4 text-[15px] font-semibold text-soil shadow-card transition active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40"
-      onClick={() => speak(text)}
-      aria-label={`${label} : ${text}`}
-    >
-      <Picto name="ecouter" size={22} /> {label}
-    </button>
-  );
-}
 
 const NAV_BY_ROLE = {
   PRODUCER: [
@@ -344,11 +330,8 @@ const TONE = {
 const TONE_TITLE = { good: 'text-leaf', warn: 'text-warn', bad: 'text-danger', neutral: 'text-soil' };
 const TONE_PICTO = { good: 'ok', warn: 'sablier', bad: 'non', neutral: 'calendrier' };
 
-// The answer a person came for: first on the screen, large, spoken aloud once.
+// The answer a person came for: first on the screen, large, with a picture that carries it without reading.
 export function Verdict({ tone = 'neutral', title, text, picto }) {
-  useEffect(() => {
-    if (text) speak(`${title}. ${text}`);
-  }, [title, text]);
   return (
     <div className={`rounded-3xl p-5 shadow-card ${TONE[tone]}`} role="status" aria-live="polite">
       <div className="flex items-center gap-4">
@@ -356,11 +339,6 @@ export function Verdict({ tone = 'neutral', title, text, picto }) {
         <p className={`font-display text-[24px] font-bold leading-tight ${TONE_TITLE[tone]}`}>{title}</p>
       </div>
       {text && <p className="mt-3 text-[16px] leading-relaxed text-soil">{text}</p>}
-      {text && (
-        <div className="mt-4">
-          <SpeakButton text={`${title}. ${text}`} label="Réécouter" />
-        </div>
-      )}
     </div>
   );
 }

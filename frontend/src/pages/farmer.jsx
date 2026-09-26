@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Gavel, MapPin, Pause, Play } from 'lucide-react';
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
-import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, SpeakButton, TileRadioGroup, Verdict } from '../ui';
+import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, TileRadioGroup, Verdict } from '../ui';
 import { Picto } from '../picto';
 import { fmtDate, fmtDay, fmtLongDate, fmtNum, fmtTime } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
-import { HOME_BY_ROLE, LANG_LABEL, LANG_TAG } from '../lib/constants';
+import { HOME_BY_ROLE, LANG_LABEL } from '../lib/constants';
 
 // The weather a farmer plans the day with: today and the next two days, in pictures first.
 function weatherPicto(rainMm) {
@@ -117,7 +117,7 @@ export function Home() {
       <div className="grid grid-cols-2 gap-3">
         <ActionTile to="/semis" picto="semis" label="Semer ?" hint="selon la pluie tombée" tint="green" />
         <ActionTile to="/pesticide" picto="pesticide" label="Vérifier un pesticide" hint="homologué ou non" />
-        <ActionTile to="/fiches" picto="fiche" label="Fiches et règles" hint="lues à voix haute" />
+        <ActionTile to="/fiches" picto="fiche" label="Fiches et règles" hint="en images et en audio" />
         <ActionTile to="/marche" picto="marche" label="Marché et prix" hint="offres ouvertes" tint="yellow" />
       </div>
 
@@ -854,32 +854,18 @@ export function Sheets() {
                 {c.officialRef}
               </p>
             )}
-            <div className="mt-4 space-y-2">
-              <SpeakButton text={`${c.title}. ${c.body}`} label="Écouter en français" />
-              {c.audios.map((a) => (
-                <div key={a.lang} className="space-y-1.5">
-                  <AudioPill
-                    src={`${API_URL}/contents/${c.id}/audio/${a.lang}`}
-                    captions={`${API_URL}/contents/${c.id}/captions.vtt`}
-                    label={LANG_LABEL[a.lang] ?? a.lang}
-                  />
-                  {a.origin === 'SYNTHETIC' && (
-                    <p className="px-1">
-                      <span className="badge bg-warn-light text-warn">voix de synthèse · {a.provider}</span>
-                    </p>
-                  )}
-                  {a.origin === 'SYNTHETIC' && a.transcript && (
-                    <details className="px-1 text-[14px]">
-                      <summary className="cursor-pointer font-semibold">
-                        Texte lu{a.machineTranslated ? ' (traduction automatique, à faire valider par un locuteur)' : ''}
-                      </summary>
-                      <p className="mt-1" lang={LANG_TAG[a.lang]}>
-                        {a.transcript}
-                      </p>
-                    </details>
-                  )}
-                </div>
-              ))}
+            <div className="mt-4 space-y-2 empty:hidden">
+              {c.audios
+                .filter((a) => a.origin !== 'SYNTHETIC')
+                .map((a) => (
+                  <div key={a.lang} className="space-y-1.5">
+                    <AudioPill
+                      src={`${API_URL}/contents/${c.id}/audio/${a.lang}`}
+                      captions={`${API_URL}/contents/${c.id}/captions.vtt`}
+                      label={LANG_LABEL[a.lang] ?? a.lang}
+                    />
+                  </div>
+                ))}
             </div>
           </article>
         ))}
@@ -928,7 +914,6 @@ export function Alerts() {
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <SpeakButton text={n.alert?.message ?? n.body} />
               {!n.readAt && (
                 <button className="btn-primary min-h-[44px] rounded-full px-5" onClick={() => ack(n.id)}>
                   J’ai lu

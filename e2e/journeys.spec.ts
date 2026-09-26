@@ -185,20 +185,29 @@ test.describe('F-12 / F-13 public verification', () => {
 });
 
 test.describe('F-08 local-language voices', () => {
-  test('a synthetic voice is labelled, and the text it reads is available in its language', async ({ page }) => {
+  test('only a person\'s recording is offered; a synthetic voice is never played, and nothing speaks by itself', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { spoken: number }).spoken = 0;
+      window.speechSynthesis.speak = () => {
+        (window as unknown as { spoken: number }).spoken += 1;
+      };
+    });
     await page.route('**/contents', async (route) => {
       const res = await route.fetch();
       const list = await res.json();
       list[0].audios = [
-        { lang: 'fon', bytes: 1000, origin: 'SYNTHETIC', transcript: 'Wema ɖé ɖò fɔn mɛ', machineTranslated: true, provider: '229langues' },
+        { lang: 'fon', bytes: 1000, origin: 'SYNTHETIC', transcript: 'Wema', machineTranslated: true, provider: '229langues' },
+        { lang: 'bariba', bytes: 1000, origin: 'RECORDED', transcript: null, machineTranslated: false, provider: null },
       ];
       await route.fulfill({ response: res, json: list });
     });
     await page.goto('/fiches');
-    await expect(page.getByText('voix de synthèse · 229langues')).toBeVisible();
-    await page.getByText(/^Texte lu \(traduction automatique/).click();
-    const read = page.getByText('Wema ɖé ɖò fɔn mɛ');
-    await expect(read).toBeVisible();
-    await expect(read).toHaveAttribute('lang', 'fon');
+    const sheet = page.getByRole('article').first();
+    await expect(sheet.getByRole('button', { name: 'Écouter en Bariba' })).toBeVisible();
+    await expect(sheet.getByRole('button', { name: 'Écouter en Fon' })).toHaveCount(0);
+    await expect(page.getByText('229langues')).toHaveCount(0);
+    await page.goto('/semis');
+    await expect(page.getByText(/^(Vous pouvez semer|Attendez|Hors saison)$/)).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { spoken: number }).spoken)).toBe(0);
   });
 });

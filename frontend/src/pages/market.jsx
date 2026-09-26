@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { BadgeCheck, MapPin, PackageCheck, Phone, ShieldX } from 'lucide-react';
-import { api, newClientId, API_URL } from '../api';
+import { api, newClientId, sendOrQueue, API_URL } from '../api';
 import { CropPicker, Demo, ErrorNote, Qr, Shell, Verdict, fmtDate, fmtFcfa, useSession } from '../ui';
 import { ProducerFor } from './farmer';
 
@@ -47,8 +47,8 @@ function NewListing({ onDone }) {
   const submit = async (e) => {
     e.preventDefault(); setError(''); setOk('');
     try {
-      await api('/market/listings', { method: 'POST', body: { clientId: newClientId(), cropId, quantityKg: Number(f.quantityKg), pricePerKg: Number(f.pricePerKg), forExport: f.forExport, ...(f.exportLicense ? { exportLicense: f.exportLicense } : {}), ...(forUserId ? { forUserId } : {}) } });
-      setOk('Offre publiée.'); onDone();
+      const r = await sendOrQueue('/market/listings', { clientId: newClientId(), cropId, quantityKg: Number(f.quantityKg), pricePerKg: Number(f.pricePerKg), forExport: f.forExport, ...(f.exportLicense ? { exportLicense: f.exportLicense } : {}), ...(forUserId ? { forUserId } : {}) }, 'offre');
+      setOk(r.sent ? 'Offre publiée.' : 'Pas de réseau : l’offre partira au retour de la connexion.'); onDone();
     } catch (err) { setError(err.message); }
   };
   return (

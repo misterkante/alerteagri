@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Alerts, Harvest, Home, Login, Pesticide, ProducerHome, Report, Sheets, Sowing } from './pages/farmer';
 import { LotPage, Market, ReceiptCheck, UssdPhone } from './pages/market';
 import { Cms, Commune, Dashboard } from './pages/staff';
+import { Parcels } from './pages/advisor';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/telephone" element={<UssdPhone />} />
         <Route path="/recu/:id" element={<ReceiptCheck />} />
         <Route path="/lot/:code" element={<LotPage />} />
+        <Route path="/parcelles" element={<Parcels />} />
         <Route path="/tableau" element={<Dashboard />} />
         <Route path="/cms" element={<Cms />} />
         <Route path="/recettes" element={<Commune />} />

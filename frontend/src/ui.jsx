@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import qrcode from 'qrcode-generator';
-import { ArrowLeft, Bean, Carrot, Cherry, CloudOff, Leaf, LogOut, Nut, Sprout, Volume2, Wheat, Wifi } from 'lucide-react';
-import { getSession, setSession, flushQueue, queueSize } from './api';
+import { ArrowLeft, Bean, Bell, BookOpen, Bug, Carrot, Cherry, CloudOff, FlaskConical, Home, LayoutDashboard, Leaf, LogOut, MapPinned, Nut, Phone, Receipt, ShoppingBasket, Salad, Sprout, TreeDeciduous, Volume2, Wheat, Wifi } from 'lucide-react';
+import { API_URL, getSession, setSession, flushQueue, queueSize } from './api';
 
 export const CROPS = [
   { id: 'mais', name: 'Maïs', Icon: Wheat },
@@ -14,6 +14,8 @@ export const CROPS = [
   { id: 'manioc', name: 'Manioc', Icon: Carrot },
   { id: 'coton', name: 'Coton', Icon: Leaf },
   { id: 'tomate', name: 'Tomate', Icon: Cherry },
+  { id: 'anacarde', name: 'Anacarde', Icon: TreeDeciduous },
+  { id: 'igname', name: 'Igname', Icon: Salad },
 ];
 
 export function useSession() {
@@ -57,37 +59,147 @@ export function SpeakButton({ text, label = 'Écouter' }) {
   );
 }
 
-export function Shell({ title, back = true, children }) {
+const NAV_BY_ROLE = {
+  PRODUCER: [['/producteur', Home, 'Accueil'], ['/alertes', Bell, 'Alertes'], ['/signaler', Bug, 'Signaler'], ['/marche', ShoppingBasket, 'Marché'], ['/telephone', Phone, 'USSD']],
+  ADVISOR: [['/producteur', Home, 'Accueil'], ['/parcelles', MapPinned, 'Parcelles'], ['/signaler', Bug, 'Signaler'], ['/marche', ShoppingBasket, 'Marché'], ['/cms', BookOpen, 'Fiches']],
+  BUYER: [['/marche', ShoppingBasket, 'Marché'], ['/fiches', BookOpen, 'Fiches'], ['/pesticide', FlaskConical, 'Pesticide']],
+  AGENT: [['/tableau', LayoutDashboard, 'Tableau'], ['/cms', BookOpen, 'Contenus'], ['/fiches', BookOpen, 'Fiches']],
+  ADMIN: [['/tableau', LayoutDashboard, 'Tableau'], ['/cms', BookOpen, 'Contenus'], ['/recettes', Receipt, 'Recettes']],
+  COMMUNE: [['/recettes', Receipt, 'Recettes'], ['/tableau', LayoutDashboard, 'Tableau'], ['/fiches', BookOpen, 'Fiches']],
+};
+
+export function Shell({ title, back = true, wide = false, children }) {
   const [session, setS] = useSession();
   const { online, pending } = useOnline();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const nav = session ? NAV_BY_ROLE[session.user.role] ?? [] : [];
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-soil-line bg-white">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2">
+      <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-surface focus:p-2">Aller au contenu</a>
+      <header className="sticky top-0 z-20 border-b border-soil-line bg-surface/95 backdrop-blur">
+        <div className={`mx-auto flex items-center gap-2 px-4 py-2 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
           {back && (
             <button className="btn-ghost min-h-10 px-2 py-2" onClick={() => navigate(-1)} aria-label="Retour">
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
-          <Link to="/" className="flex items-center gap-2 font-black text-leaf">
+          <Link to="/" className="flex shrink-0 items-center gap-2 font-black text-leaf" aria-label="AlerteAgri, accueil">
             <img src="/icon.svg" alt="" className="h-8 w-8" /> <span className="hidden sm:inline">AlerteAgri</span>
           </Link>
-          <h1 className="flex-1 truncate text-lg font-bold">{title}</h1>
-          <span className={`badge ${online ? 'bg-leaf-light text-leaf' : 'bg-danger-light text-danger'}`} role="status">
-            {online ? <Wifi className="mr-1 h-3 w-3" aria-hidden="true" /> : <CloudOff className="mr-1 h-3 w-3" aria-hidden="true" />}
-            {online ? 'En ligne' : 'Hors ligne'}{pending ? ` · ${pending} en attente` : ''}
+          <h1 className="min-w-0 flex-1 truncate text-lg font-bold">{title}</h1>
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
+            {nav.map(([to, Icon, label]) => (
+              <Link key={to} to={to} aria-current={pathname === to ? 'page' : undefined} className={`flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold ${pathname === to ? 'bg-leaf-light text-leaf' : 'text-soil-muted hover:bg-surface-raised'}`}>
+                <Icon className="h-4 w-4" aria-hidden="true" />{label}
+              </Link>
+            ))}
+          </nav>
+          <span className={`badge shrink-0 ${online ? 'bg-leaf-light text-leaf' : 'bg-danger-light text-danger'}`} role="status">
+            {online ? <Wifi className="h-3 w-3" aria-hidden="true" /> : <CloudOff className="h-3 w-3" aria-hidden="true" />}
+            <span className="hidden sm:inline">{online ? 'En ligne' : 'Hors ligne'}</span>{pending ? ` · ${pending}` : ''}
           </span>
           {session && (
-            <button className="btn-ghost min-h-10 px-2 py-2" onClick={() => { setS(null); navigate('/'); }} aria-label="Se déconnecter">
+            <button className="btn-ghost min-h-10 shrink-0 px-2 py-2" onClick={() => { setS(null); navigate('/'); }} aria-label="Se déconnecter">
               <LogOut className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
         </div>
       </header>
-      <main className="page">{children}</main>
+      <main id="contenu" className={`page ${wide ? 'max-w-6xl' : ''}`}>{children}</main>
+      {nav.length > 0 && (
+        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-soil-line bg-surface/95 backdrop-blur lg:hidden" aria-label="Navigation principale mobile">
+          <ul className="mx-auto flex max-w-xl justify-around">
+            {nav.map(([to, Icon, label]) => {
+              const active = pathname === to;
+              return (
+                <li key={to}>
+                  <Link to={to} aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-0.5 px-2 text-xs font-semibold ${active ? 'text-leaf' : 'text-soil-muted'}`}>
+                    <Icon className="h-6 w-6" aria-hidden="true" />{label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </div>
   );
+}
+
+export function Stat({ label, value, hint, tone = 'neutral', Icon }) {
+  const toneCls = { neutral: 'text-soil', good: 'text-leaf', warn: 'text-warn', bad: 'text-danger' }[tone];
+  return (
+    <div className="card flex flex-col gap-1 p-3">
+      <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-soil-muted">{Icon && <Icon className="h-4 w-4" aria-hidden="true" />}{label}</p>
+      <p className={`text-2xl font-black tabular-nums ${toneCls}`}>{value}</p>
+      {hint && <p className="text-xs text-soil-muted">{hint}</p>}
+    </div>
+  );
+}
+
+export function Tabs({ tabs, value, onChange }) {
+  return (
+    <div className="-mx-4 mb-4 overflow-x-auto px-4" role="tablist" aria-label="Sections">
+      <div className="flex gap-2">
+        {tabs.map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={value === id} onClick={() => onChange(id)}
+            className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold ${value === id ? 'border-leaf-mid bg-leaf-mid text-leaf-ink' : 'border-soil-line bg-surface text-soil'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Status is never color alone: each state has its own shape and a text label.
+export const STATUS = {
+  calm: { label: 'calme', cls: 'fill-status-calm', shape: 'circle' },
+  check: { label: 'à vérifier', cls: 'fill-status-check', shape: 'diamond' },
+  alert: { label: 'alerte', cls: 'fill-status-alert', shape: 'triangle' },
+};
+
+export function StatusMark({ status, x = 8, y = 8, r = 6, ...rest }) {
+  const s = STATUS[status];
+  if (s.shape === 'circle') return <circle cx={x} cy={y} r={r} className={s.cls} {...rest} />;
+  if (s.shape === 'diamond') return <polygon points={`${x},${y - r * 1.2} ${x + r * 1.2},${y} ${x},${y + r * 1.2} ${x - r * 1.2},${y}`} className={s.cls} {...rest} />;
+  return <polygon points={`${x},${y - r * 1.3} ${x + r * 1.2},${y + r} ${x - r * 1.2},${y + r}`} className={s.cls} {...rest} />;
+}
+
+export function StatusLegend() {
+  return (
+    <ul className="flex flex-wrap gap-3 text-sm" aria-label="Légende">
+      {Object.entries(STATUS).map(([k, s]) => (
+        <li key={k} className="flex items-center gap-1">
+          <svg width="16" height="16" aria-hidden="true"><StatusMark status={k} r={5} /></svg>{s.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export async function downloadWithAuth(path, filename) {
+  const s = getSession();
+  const res = await fetch(`${API_URL}${path}`, { headers: s?.accessToken ? { Authorization: `Bearer ${s.accessToken}` } : {} });
+  if (!res.ok) throw new Error(`Téléchargement impossible (${res.status})`);
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function AuthImage({ path, alt, className }) {
+  const [src, setSrc] = useState(null);
+  useEffect(() => {
+    let url;
+    const s = getSession();
+    fetch(`${API_URL}${path}`, { headers: { Authorization: `Bearer ${s?.accessToken}` } })
+      .then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) { url = URL.createObjectURL(b); setSrc(url); } }).catch(() => {});
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [path]);
+  return src ? <img src={src} alt={alt} className={className} /> : <div className={`${className} animate-pulse bg-surface-raised`} aria-hidden="true" />;
 }
 
 export function CropPicker({ value, onChange, only }) {
@@ -106,10 +218,10 @@ export function CropPicker({ value, onChange, only }) {
 }
 
 const TONE = {
-  good: 'border-leaf bg-leaf-light text-leaf',
-  warn: 'border-warn bg-warn-light text-warn',
-  bad: 'border-danger bg-danger-light text-danger',
-  neutral: 'border-soil-line bg-white text-soil',
+  good: 'border-status-calm bg-leaf-light text-leaf',
+  warn: 'border-status-check bg-warn-light text-warn',
+  bad: 'border-status-alert bg-danger-light text-danger',
+  neutral: 'border-soil-line bg-surface text-soil',
 };
 
 export function Verdict({ tone = 'neutral', title, text, Icon }) {

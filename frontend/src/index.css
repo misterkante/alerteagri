@@ -2,15 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens as RGB triplets. Dark mode is its own set of steps, not an inversion. */
+:root {
+  --page: 246 245 240;
+  --surface: 255 255 255;
+  --surface-raised: 250 249 245;
+  --line: 229 225 213;
+  --ink: 38 33 26;
+  --ink-muted: 102 94 81;
+  --leaf: 20 83 45;
+  --leaf-strong: 17 70 38;
+  --leaf-tint: 227 242 232;
+  --on-leaf: 255 255 255;
+  --warn: 146 64 14;
+  --warn-tint: 253 242 214;
+  --danger: 153 27 27;
+  --danger-tint: 253 228 228;
+  --status-calm: 47 133 90;
+  --status-check: 224 161 0;
+  --status-alert: 192 38 45;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: 15 20 17;
+    --surface: 23 30 26;
+    --surface-raised: 29 38 33;
+    --line: 45 56 50;
+    --ink: 236 233 225;
+    --ink-muted: 169 176 168;
+    --leaf: 110 205 150;
+    --leaf-strong: 47 122 79;
+    --leaf-tint: 24 52 36;
+    --on-leaf: 255 255 255;
+    --warn: 240 180 76;
+    --warn-tint: 58 44 14;
+    --danger: 243 139 139;
+    --danger-tint: 59 21 23;
+    --status-calm: 58 157 107;
+    --status-check: 191 138 16;
+    --status-alert: 224 72 79;
+    color-scheme: dark;
+  }
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { @apply bg-soil-light text-soil antialiased; }
+
 @layer components {
-  .page { @apply mx-auto w-full max-w-3xl px-4 pb-24 pt-4 text-soil; }
-  .card { @apply rounded-lg border border-soil-line bg-white p-4; }
-  .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40 disabled:opacity-50; }
-  .btn-primary { @apply btn bg-leaf text-white hover:bg-leaf-mid; }
-  .btn-ghost { @apply btn border border-soil-line bg-white text-soil hover:bg-soil-light; }
-  .input { @apply min-h-12 w-full rounded-lg border border-soil-line bg-white px-3 text-base focus:outline-none focus:ring-4 focus:ring-leaf/30; }
-  .label { @apply mb-1 block text-sm font-semibold; }
-  .tile { @apply flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-soil-line bg-white p-3 text-center text-base font-bold hover:border-leaf focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40; }
-  .badge { @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold; }
+  .page { @apply mx-auto w-full max-w-5xl px-4 pb-28 pt-4; }
+  .card { @apply rounded-xl border border-soil-line bg-surface p-4 shadow-card; }
+  .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-leaf-mid text-leaf-ink hover:bg-leaf-mid/90; }
+  .btn-ghost { @apply btn border border-soil-line bg-surface text-soil hover:bg-surface-raised; }
+  .btn-danger { @apply btn bg-status-alert text-white hover:bg-status-alert/90; }
+  .input { @apply min-h-12 w-full rounded-xl border border-soil-line bg-surface px-3 text-base text-soil placeholder:text-soil-muted focus:outline-none focus:ring-4 focus:ring-leaf/30; }
+  .label { @apply mb-1 block text-sm font-semibold text-soil; }
+  .tile { @apply flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 border-soil-line bg-surface p-3 text-center text-base font-bold text-soil shadow-card transition-colors hover:border-leaf focus:outline-none focus-visible:ring-4 focus-visible:ring-leaf/40; }
+  .badge { @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold; }
   .demo { @apply badge bg-warn-light text-warn; }
+  .muted { @apply text-soil-muted; }
+  .section-title { @apply mb-2 mt-6 text-lg font-bold; }
+  .table { @apply w-full text-sm; }
+  .table th { @apply border-b border-soil-line px-2 py-2 text-left text-xs font-bold uppercase tracking-wide text-soil-muted; }
+  .table td { @apply border-b border-soil-line/60 px-2 py-2 align-top; }
 }

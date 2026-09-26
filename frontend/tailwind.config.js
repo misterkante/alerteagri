@@ -1,14 +1,19 @@
+const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        leaf: { DEFAULT: '#14532d', light: '#dcfce7', mid: '#166534' },
-        soil: { DEFAULT: '#3f2d1c', light: '#f7f6f1', line: '#e7e2d6' },
-        warn: { DEFAULT: '#92400e', light: '#fef3c7' },
-        danger: { DEFAULT: '#991b1b', light: '#fee2e2' },
+        leaf: { DEFAULT: token('leaf'), light: token('leaf-tint'), mid: token('leaf-strong'), ink: token('on-leaf') },
+        soil: { DEFAULT: token('ink'), muted: token('ink-muted'), light: token('page'), line: token('line') },
+        surface: { DEFAULT: token('surface'), raised: token('surface-raised') },
+        warn: { DEFAULT: token('warn'), light: token('warn-tint') },
+        danger: { DEFAULT: token('danger'), light: token('danger-tint') },
+        status: { calm: token('status-calm'), check: token('status-check'), alert: token('status-alert') },
       },
-      fontFamily: { sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'] },
+      fontFamily: { sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Ubuntu', 'sans-serif'] },
+      boxShadow: { card: '0 1px 2px rgb(0 0 0 / 0.06)' },
     },
   },
   plugins: [],

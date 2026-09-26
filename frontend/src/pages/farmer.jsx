@@ -2,37 +2,71 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, BellRing, Bug, CheckCircle2, Clock, CloudRain, FlaskConical, Gavel, Hourglass, Phone, Receipt,
-  ShieldAlert, ShieldCheck, ShieldQuestion, ShoppingBasket, Sprout, Sun, Wheat, BookOpen, LayoutDashboard, Ban,
+  ShieldAlert, ShieldCheck, ShieldQuestion, ShoppingBasket, Sprout, Sun, Wheat, BookOpen, Ban, Camera,
 } from 'lucide-react';
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
-import { CropPicker, Demo, ErrorNote, Shell, SpeakButton, Verdict, fmtDate, useSession } from '../ui';
+import { CropPicker, Demo, ErrorNote, Shell, SpeakButton, Stat, Verdict, fmtDate, useSession } from '../ui';
+import { MyParcels } from './advisor';
 
 const HOME_BY_ROLE = { PRODUCER: '/producteur', ADVISOR: '/producteur', BUYER: '/marche', AGENT: '/tableau', ADMIN: '/tableau', COMMUNE: '/recettes' };
 
 export function Home() {
   const [session] = useSession();
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    Promise.all([api('/communes', { auth: false }), api('/contents', { auth: false }), api('/weather/status', { auth: false }), api('/market/listings', { auth: false })])
+      .then(([c, f, w, l]) => setStats({ communes: c.length, fiches: f.length, weather: w?.finishedAt, listings: l.length }))
+      .catch(() => {});
+  }, []);
   return (
     <Shell title="Accueil" back={false}>
-      <section className="card">
-        <h2 className="text-2xl font-black text-leaf">Voir venir, agir à temps.</h2>
-        <p className="mt-2">Alertes météo et ravageurs, conseil de semis, fiches en langues locales, marché et taxe communale : pour tous les producteurs, même sans lire ni internet.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {session ? (
-            <Link to={HOME_BY_ROLE[session.user.role] ?? '/'} className="btn-primary">Continuer ({session.user.name})</Link>
-          ) : (
-            <Link to="/connexion" className="btn-primary">Se connecter</Link>
-          )}
-          <Link to="/telephone" className="btn-ghost"><Phone className="h-5 w-5" aria-hidden="true" /> Téléphone USSD</Link>
+      <section className="overflow-hidden rounded-2xl bg-leaf-mid text-leaf-ink">
+        <div className="p-6 sm:p-8">
+          <p className="text-sm font-bold uppercase tracking-widest opacity-80">Bénin · 77 communes surveillées</p>
+          <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">Voir venir,<br />agir à temps.</h2>
+          <p className="mt-3 max-w-xl text-base opacity-90">Alertes météo et ravageurs, conseil de semis, fiches dans votre langue, marché et taxe communale. Pour tous les producteurs, même sans lire, sans smartphone ou sans réseau.</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {session ? (
+              <Link to={HOME_BY_ROLE[session.user.role] ?? '/'} className="btn bg-surface text-leaf hover:bg-surface-raised">Continuer ({session.user.name})</Link>
+            ) : (
+              <Link to="/connexion" className="btn bg-surface text-leaf hover:bg-surface-raised">Se connecter</Link>
+            )}
+            <Link to="/telephone" className="btn border border-white/40 text-leaf-ink hover:bg-white/10"><Phone className="h-5 w-5" aria-hidden="true" /> Téléphone USSD</Link>
+          </div>
         </div>
       </section>
-      <h2 className="mt-6 mb-2 text-lg font-bold">Accès libre</h2>
+
+      {stats && (
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Communes suivies" value={stats.communes} hint="relevé quotidien" />
+          <Stat label="Dernier relevé" value={stats.weather ? new Date(stats.weather).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '–'} hint={stats.weather ? fmtDate(stats.weather) : 'Open-Meteo'} />
+          <Stat label="Fiches publiées" value={stats.fiches} hint="lues à voix haute" />
+          <Stat label="Offres ouvertes" value={stats.listings} hint="marché vivrier" />
+        </div>
+      )}
+
+      <h2 className="section-title">Accès libre</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link to="/semis" className="tile"><Sprout className="h-9 w-9 text-leaf" aria-hidden="true" />Semer ?</Link>
         <Link to="/pesticide" className="tile"><FlaskConical className="h-9 w-9 text-leaf" aria-hidden="true" />Vérifier un pesticide</Link>
         <Link to="/fiches" className="tile"><BookOpen className="h-9 w-9 text-leaf" aria-hidden="true" />Fiches et règles</Link>
         <Link to="/marche" className="tile"><ShoppingBasket className="h-9 w-9 text-leaf" aria-hidden="true" />Marché et prix</Link>
       </div>
-      <p className="mt-6 text-sm">Données météo : Open-Meteo, relevées pour les 77 communes. API ouverte : <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>documentation</a>.</p>
+
+      <h2 className="section-title">Comment ça marche</h2>
+      <ol className="grid gap-3 sm:grid-cols-3">
+        {[
+          [CloudRain, 'Observer', 'La météo réelle de chaque commune et les signalements des producteurs et conseillers.'],
+          [BellRing, 'Alerter', 'Une règle validée par l’ATDA déclenche un SMS dans la commune et ses voisines.'],
+          [CheckCircle2, 'Agir', 'Le producteur confirme la lecture puis l’action. L’agent voit la boucle se fermer.'],
+        ].map(([Icon, title, text], i) => (
+          <li key={title} className="card">
+            <p className="flex items-center gap-2 font-bold"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-leaf-light text-sm text-leaf">{i + 1}</span><Icon className="h-5 w-5 text-leaf" aria-hidden="true" />{title}</p>
+            <p className="mt-2 text-sm text-soil-muted">{text}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-6 text-sm text-soil-muted">Données météo Open-Meteo. Les éléments marqués « démo » sont simulés. <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>API ouverte</a>.</p>
     </Shell>
   );
 }
@@ -100,6 +134,7 @@ export function ProducerHome() {
           </Link>
         ))}
       </div>
+      {session.user.role === 'PRODUCER' && <MyParcels />}
       {session.user.role === 'ADVISOR' && <AdvisorPanel />}
     </Shell>
   );
@@ -215,7 +250,17 @@ function ProducerFor({ value, onChange }) {
   );
 }
 
+// Downscale on the phone before sending: a 4 MB photo becomes ~150 KB, which a 2G link can carry.
+async function compressPhoto(file, max = 1280) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) });
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.72));
+}
+
 export function Report() {
+  const [photo, setPhoto] = useState(null);
   const [cropId, setCropId] = useState('mais');
   const [symptom, setSymptom] = useState('');
   const [forUserId, setFor] = useState('');
@@ -229,6 +274,11 @@ export function Report() {
     } catch { pos = {}; }
     try {
       const r = await sendOrQueue('/reports', { clientId: newClientId(), cropId, symptom, ...pos, ...(forUserId ? { forUserId } : {}) }, 'signalement');
+      if (r.sent && photo) {
+        const form = new FormData();
+        form.append('file', await compressPhoto(photo), 'photo.jpg');
+        await api(`/reports/${r.data.id}/photo`, { method: 'POST', form }).catch(() => {});
+      }
       setDone(r.sent ? 'sent' : 'queued');
     } catch (e) { setError(e.message); }
   };
@@ -255,6 +305,11 @@ export function Report() {
             </button>
           ))}
         </div>
+        <h2 className="font-bold">3. Photo (facultatif)</h2>
+        <label className="tile min-h-20 cursor-pointer">
+          <Camera className="h-7 w-7 text-leaf" aria-hidden="true" />{photo ? `Photo prête (${Math.round(photo.size / 1024)} Ko avant réduction)` : 'Prendre une photo'}
+          <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+        </label>
         <button className="btn-primary w-full" disabled={!symptom} onClick={submit}>Envoyer le signalement</button>
         <ErrorNote error={error} />
       </div>
@@ -378,10 +433,10 @@ export function Alerts() {
             <div className="flex items-start gap-3">
               <AlertTriangle className={`h-8 w-8 shrink-0 ${n.readAt ? 'text-soil/50' : 'text-danger'}`} aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm">{fmtDate(n.createdAt)} · {n.channel}</p>
-                <p className="font-semibold">{n.alert.message}</p>
+                <p className="text-sm text-soil-muted">{fmtDate(n.createdAt)} · {{ ALERT: 'Alerte', RAPPEL: 'Rappel de culture', REGLEMENTATION: 'Nouvelle règle' }[n.kind] ?? 'Alerte'} · {n.channel}</p>
+                <p className="font-semibold">{n.alert?.message ?? n.body.replace(/^AlerteAgri[^:]*: /, '')}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <SpeakButton text={n.alert.message} />
+                  <SpeakButton text={n.alert?.message ?? n.body} />
                   {!n.readAt && <button className="btn-primary min-h-10 py-2" onClick={() => ack(n.id)}>J’ai lu</button>}
                   {n.readAt && !n.action && <button className="btn-ghost min-h-10 py-2" onClick={() => ack(n.id, 'mesure prise')}>J’ai agi</button>}
                   {n.action && <span className="badge bg-leaf-light text-leaf">Action : {n.action}</span>}

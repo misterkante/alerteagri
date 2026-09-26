@@ -20,3 +20,8 @@ export const fmtLongDate = (d) => {
   const s = new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
+// +2290197000001 is shown as people write it: 01 97 00 00 01.
+export const fmtPhone = (p) => {
+  const local = String(p).replace(/^\+229/, '');
+  return /^[0-9]{10}$/.test(local) ? local.replace(/(\d{2})(?=\d)/g, '$1 ') : String(p);
+};

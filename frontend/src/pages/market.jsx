@@ -5,7 +5,7 @@ import { api, newClientId, sendOrQueue, API_URL } from '../api';
 import { CropPicker, Demo, ErrorNote, Qr, ScrollArea, Shell, Verdict } from '../ui';
 import { Picto } from '../picto';
 import { cropPicto } from '../lib/crops';
-import { fmtDate, fmtFcfa, fmtNum } from '../lib/format';
+import { fmtDate, fmtFcfa, fmtNum, fmtPhone } from '../lib/format';
 import { useSession } from '../lib/session';
 import { ProducerFor } from './farmer';
 
@@ -432,7 +432,7 @@ export function UssdPhone() {
         <div className="mx-auto max-w-[320px] rounded-[2.5rem] bg-[#1f2421] p-4 shadow-lift">
           <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-white/20" aria-hidden="true" />
           <div className="min-h-60 rounded-2xl bg-[#d9e4d0] p-4 font-mono text-[14px] leading-snug text-black" aria-live="polite">
-            <p className="mb-2 text-[12px] text-[#3b4a34]">{session.user.phone}</p>
+            <p className="mb-2 text-[12px] text-[#3b4a34]">{fmtPhone(session.user.phone)}</p>
             <pre className="whitespace-pre-wrap font-mono">
               {screen ? screen.replace(/^(CON|END) /, '') : 'Composez le code AlerteAgri.'}
             </pre>

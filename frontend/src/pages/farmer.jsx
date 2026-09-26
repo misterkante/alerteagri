@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, Gavel, MapPin, Pause, Play } from 'lucide-re
 import { api, newClientId, sendOrQueue, API_URL } from '../api';
 import { CropPicker, Demo, ErrorNote, Shell, SignInPrompt, TileRadioGroup, Verdict } from '../ui';
 import { Picto } from '../picto';
-import { fmtDate, fmtDay, fmtLongDate, fmtNum, fmtTime } from '../lib/format';
+import { fmtDate, fmtDay, fmtLongDate, fmtNum, fmtPhone, fmtTime } from '../lib/format';
 import { useCommune, useSession } from '../lib/session';
 import { MyParcels } from './advisor';
 import { HOME_BY_ROLE, LANG_LABEL } from '../lib/constants';
@@ -159,7 +159,7 @@ export function Home() {
 
 export function Login() {
   const [, setSession] = useSession();
-  const [phone, setPhone] = useState('+229');
+  const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -167,7 +167,7 @@ export function Login() {
     e.preventDefault();
     setError('');
     try {
-      const s = await api('/auth/login', { method: 'POST', body: { phone: phone.replace(/\s/g, ''), pin }, auth: false });
+      const s = await api('/auth/login', { method: 'POST', body: { phone, pin }, auth: false });
       setSession(s);
       navigate(HOME_BY_ROLE[s.user.role] ?? '/');
     } catch (err) {
@@ -191,10 +191,15 @@ export function Login() {
             className="input text-[18px] tracking-wide"
             inputMode="tel"
             autoComplete="tel"
+            placeholder="01 97 00 00 01"
+            aria-describedby="phone-aide"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
           />
+          <p id="phone-aide" className="mt-1.5 text-[13px] text-soil-muted">
+            Les 10 chiffres de votre numéro, avec ou sans +229.
+          </p>
         </div>
         <div>
           <label className="label" htmlFor="pin">
@@ -221,7 +226,7 @@ export function Login() {
         <p className="font-semibold">
           Comptes de démonstration <Demo />
         </p>
-        <p className="mt-1">Producteurs : +22997000001 (Parakou), +22997000004 (Bohicon) · Acheteur : +22996000001 · PIN 1234.</p>
+        <p className="mt-1">Producteurs : 01 97 00 00 01 (Parakou), 01 97 00 00 04 (Bohicon) · Acheteur : 01 96 00 00 01 · PIN 1234.</p>
         <p className="mt-1 text-soil-muted">Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
       </div>
     </Shell>
@@ -285,7 +290,7 @@ export function ProducerHome() {
 
 function AdvisorPanel() {
   const [producers, setProducers] = useState([]);
-  const [form, setForm] = useState({ name: '', phone: '+229', pin: '' });
+  const [form, setForm] = useState({ name: '', phone: '', pin: '' });
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const load = () =>
@@ -302,7 +307,7 @@ function AdvisorPanel() {
     try {
       await api('/users/producers', { method: 'POST', body: form });
       setMsg('Producteur inscrit.');
-      setForm({ name: '', phone: '+229', pin: '' });
+      setForm({ name: '', phone: '', pin: '' });
       load();
     } catch (err) {
       setError(err.message);
@@ -325,7 +330,7 @@ function AdvisorPanel() {
             </span>
             <span>
               <span className="block font-semibold">{p.name}</span>
-              <span className="block text-[14px] text-soil-muted">{p.phone}</span>
+              <span className="block text-[14px] text-soil-muted">{fmtPhone(p.phone)}</span>
             </span>
           </li>
         ))}
@@ -343,6 +348,7 @@ function AdvisorPanel() {
         <input
           className="input"
           inputMode="tel"
+          placeholder="Téléphone : 01 XX XX XX XX"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           required

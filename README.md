@@ -45,10 +45,10 @@ Le monitoring fonctionne de bout en bout : relevé météo réel (Open-Meteo, 77
 
 | Rôle | Téléphone | PIN |
 |---|---|---|
-| Producteur (Parakou) | +22997000001 | 1234 |
-| Producteur (Bohicon) | +22997000004 | 1234 |
-| Acheteur | +22996000001 | 1234 |
-| Agent ATDA, commune de Parakou, conseiller, administrateur | +22990000002, +22990000003, +22990000004, +22990000001 | communiqué au jury |
+| Producteur (Parakou) | 01 97 00 00 01 | 1234 |
+| Producteur (Bohicon) | 01 97 00 00 04 | 1234 |
+| Acheteur | 01 96 00 00 01 | 1234 |
+| Agent ATDA, commune de Parakou, conseiller, administrateur | 01 90 00 00 02, 01 90 00 00 03, 01 90 00 00 04, 01 90 00 00 01 | communiqué au jury |
 
 Parcours de démonstration : [`docs/DEMO.md`](docs/DEMO.md).
 

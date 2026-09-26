@@ -3,8 +3,8 @@
 Avant de commencer, 5 minutes avant la démo :
 
 1. L'API est maintenue éveillée par une surveillance externe ; vérifiez-la d'un clic : https://alerteagri.onrender.com/health. L'application : https://alerteagri.vercel.app
-2. Connectez-vous en agent (+22990000002) et cliquez sur **Relever la météo**, puis **Appliquer les règles**.
-3. Ouvrez deux onglets : le producteur (+22997000001, PIN 1234) et l'agent.
+2. Connectez-vous en agent (01 90 00 00 02) et cliquez sur **Relever la météo**, puis **Appliquer les règles**.
+3. Ouvrez deux onglets : le producteur (01 97 00 00 01, PIN 1234) et l'agent.
 
 ## 1. Le producteur qui ne lit pas (1 min 30)
 
@@ -29,23 +29,23 @@ Avant de commencer, 5 minutes avant la démo :
 
 - **Valeur protégée** : l'estimation en FCFA de ce que l'alerte protège.
 - **Offre face aux usines de la GDIZ** : la donnée qui éclaire les autorisations d'export prévues par le décret de 2024.
-- Acheteur (+22996000001) : **Marché**, puis Réserver, puis Payer. La TDL est calculée et le reçu porte un QR. Scannez-le : « Reçu authentique ». Modifiez un caractère de l'adresse : « Reçu invalide ».
+- Acheteur (01 96 00 00 01) : **Marché**, puis Réserver, puis Payer. La TDL est calculée et le reçu porte un QR. Scannez-le : « Reçu authentique ». Modifiez un caractère de l'adresse : « Reçu invalide ».
 - Page publique du lot : `/lot/LOT-DEMO0001`. On y voit l'origine, la conformité export et la géolocalisation pour l'EUDR, mais jamais le nom du producteur.
 - Producteur : essayez de publier du soja à l'export sans agrément. C'est refusé, avec le texte du décret.
 
 ## 5. Le suivi de campagne (2 min)
 
-- Conseillère (+22990000004) : **Parcelles**. Nouvelle parcelle : producteur, culture, surface, date de semis et bouton « position » (le GPS du téléphone). Les étapes de culture sont calculées, et chaque étape due part par SMS une seule fois.
+- Conseillère (01 90 00 00 04) : **Parcelles**. Nouvelle parcelle : producteur, culture, surface, date de semis et bouton « position » (le GPS du téléphone). Les étapes de culture sont calculées, et chaque étape due part par SMS une seule fois.
 - Ouvrez **Suivi de culture** : le stress hydrique (pluie moins évapotranspiration depuis le semis, données réelles de la commune).
 - **Enregistrer une livraison** : le lot reçoit un QR, et sa page publique est prête pour l'EUDR.
 - **Vente groupée** : les quantités de trois producteurs forment une seule offre.
 - Agent : onglet **Règles et calendriers**, pour changer un seuil sans développeur. Onglet **Sécheresse** : l'indice qui déclencherait une assurance indicielle (simulation). Onglet **Interopérabilité** : export FAMEWS pour la FAO et envoi des lots au marché terminal SIPI (adaptateur simulé).
 - Agent : **Contenus**, puis publier une règle ciblée « soja » : les producteurs de soja reçoivent un SMS.
-- Commune (+22990000003) : **Recettes**, puis **Rapprochement**. Chaque reçu est revérifié par sa signature, avec un export CSV pour le receveur.
+- Commune (01 90 00 00 03) : **Recettes**, puis **Rapprochement**. Chaque reçu est revérifié par sa signature, avec un export CSV pour le receveur.
 
 ## 6. Ce qui rend le code auditable (1 min)
 
 - `docs/architecture/` : carte des packages et diagrammes de séquence.
 - `docs/KNOWN_ISSUES.md` : ce qui est simulé, dit franchement.
-- `docs/REPORT.md` et `docs/security/pentest-2026-09-26.md` : 320 tests (87 métier, 61 API sur la vraie base, 172 dans le navigateur dont 144 audits d'accessibilité) ; des failles réintroduites volontairement pour vérifier que les tests les détectent ; un pentest de l'API en ligne.
+- `docs/REPORT.md` et `docs/security/pentest-2026-09-26.md` : 342 tests (91 métier, 65 API sur la vraie base, 186 dans le navigateur dont 152 audits d'accessibilité) ; des failles réintroduites volontairement pour vérifier que les tests les détectent ; un pentest de l'API en ligne.
 - `.github/workflows/ci.yml` et `.husky/` : rien n'entre dans le dépôt sans lint, types stricts, tests et audit d'accessibilité.

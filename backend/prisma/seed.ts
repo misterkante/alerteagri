@@ -143,7 +143,7 @@ async function main() {
       await prisma.referencePrice.create({ data: { cropId, communeId, pricePerKg, observedAt, source: 'Valeur de démonstration (à remplacer par le bulletin du SIM agricole)' } });
     }
   }
-  if ((await prisma.parcel.count()) === 0) {
+  if (!(await prisma.lot.findUnique({ where: { code: 'LOT-DEMO0001' } }))) {
     const byPhone = async (phone: string) => (await prisma.user.findUniqueOrThrow({ where: { phone } })).id;
     const demoParcels: [string, string, string, number, number, number][] = [
       ['+22997000001', 'parakou', 'mais', 2.5, 9.352, 2.611], ['+22997000001', 'parakou', 'soja', 2, 9.341, 2.655],
@@ -153,7 +153,7 @@ async function main() {
     for (const [phone, communeId, cropId, areaHa, lat, lon] of demoParcels) {
       await prisma.parcel.create({ data: { ownerId: await byPhone(phone), communeId, cropId, areaHa, lat, lon } });
     }
-    const soja = await prisma.parcel.findFirstOrThrow({ where: { communeId: 'tchaourou', cropId: 'soja' } });
+    const soja = await prisma.parcel.findFirstOrThrow({ where: { communeId: 'tchaourou', cropId: 'soja' }, orderBy: { createdAt: 'desc' } });
     await prisma.lot.create({ data: { code: 'LOT-DEMO0001', parcelId: soja.id, harvestDate: new Date('2026-09-15T00:00:00Z'), weightKg: 3200, humidityPct: 11.5 } });
   }
   // eslint-disable-next-line no-console

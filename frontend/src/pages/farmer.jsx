@@ -335,7 +335,7 @@ export function Sheets() {
             <article key={c.id} className="card">
               <div className="flex items-start gap-3">
                 <Icon className="h-9 w-9 shrink-0 text-leaf" aria-hidden="true" />
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase text-soil/70">{c.kind === 'REGLEMENTATION' ? 'Règlementation' : c.kind === 'FICHE_LUTTE' ? 'Fiche pratique' : 'Calendrier'}</p>
                   <h2 className="text-lg font-bold">{c.title}</h2>
                   <p className="mt-1">{c.body}</p>
@@ -343,9 +343,9 @@ export function Sheets() {
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <SpeakButton text={`${c.title}. ${c.body}`} label="Écouter en français" />
                     {c.audios.map((a) => (
-                      <div key={a.lang} className="flex items-center gap-2">
+                      <div key={a.lang} className="flex w-full flex-col gap-1">
                         <span className="text-sm font-semibold">{LANG_LABEL[a.lang] ?? a.lang}</span>
-                        <audio controls preload="none" src={`${API_URL}/contents/${c.id}/audio/${a.lang}`} className="h-10" />
+                        <audio controls preload="none" src={`${API_URL}/contents/${c.id}/audio/${a.lang}`} className="h-10 w-full max-w-full" />
                       </div>
                     ))}
                   </div>

@@ -7,6 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered from main.jsx, which also reloads the page when a new version takes over.
+      injectRegister: false,
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'AlerteAgri',
@@ -21,6 +23,9 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // The French subset of Montserrat is precached; accented local-language subsets are cached on first use.
         globPatterns: ['**/*.{js,css,html,svg}', 'assets/montserrat-base-*.woff2'],
         runtimeCaching: [

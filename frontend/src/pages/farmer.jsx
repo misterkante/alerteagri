@@ -153,8 +153,62 @@ export function Home() {
         <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>
           API ouverte
         </a>
+        . Contact : Gilchrist Kanté,{' '}
+        <a className="font-semibold text-leaf underline" href="tel:+2290191026911">
+          01 91 02 69 11
+        </a>
+        .
       </p>
     </Shell>
+  );
+}
+
+// Demo accounts for the jury, where they are used: one tap fills the form, nothing to copy.
+// The staff PIN comes from the deployment (VITE_DEMO_STAFF_PIN), never from the repository.
+const STAFF_PIN = import.meta.env.VITE_DEMO_STAFF_PIN;
+const DEMO_ACCOUNTS = [
+  { role: 'Productrice · Parakou', name: 'Awa Dossou', phone: '01 97 00 00 01', pin: '1234', picto: 'mais' },
+  { role: 'Producteur · Bohicon', name: 'Kossi Houngbo', phone: '01 97 00 00 04', pin: '1234', picto: 'manioc' },
+  { role: 'Acheteur', name: 'Coopérative d’achat Borgou', phone: '01 96 00 00 01', pin: '1234', picto: 'marche' },
+  { role: 'Conseillère agricole ATDA', name: 'Parakou', phone: '01 90 00 00 04', pin: STAFF_PIN, picto: 'semis' },
+  { role: 'Agent ATDA', name: 'Pôle 4 (Borgou)', phone: '01 90 00 00 02', pin: STAFF_PIN, picto: 'alerte' },
+  { role: 'Mairie', name: 'Parakou (TDL)', phone: '01 90 00 00 03', pin: STAFF_PIN, picto: 'mairie' },
+];
+
+function DemoAccounts({ onPick }) {
+  const accounts = DEMO_ACCOUNTS.filter((a) => a.pin);
+  return (
+    <section className="mt-6" aria-labelledby="comptes-demo">
+      <h2 id="comptes-demo" className="flex items-center gap-2 text-[17px] font-semibold">
+        Comptes de démonstration <Demo />
+      </h2>
+      <p className="mt-1 text-[14px] text-soil-muted">Touchez « Remplir » puis « Entrer ».</p>
+      <ul className="card mt-3 divide-y divide-soil-line/70 p-0">
+        {accounts.map((a) => (
+          <li key={a.phone} className="row">
+            <Picto name={a.picto} size={32} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-soil-muted">{a.role}</span>
+              <span className="block truncate text-[15px] font-semibold">{a.name}</span>
+              <span className="block text-[13px] tabular-nums">
+                {a.phone} · PIN {a.pin}
+              </span>
+            </span>
+            <button
+              type="button"
+              className="rounded-full bg-leaf-light px-4 py-2 text-[14px] font-semibold text-leaf"
+              onClick={() => onPick(a)}
+              aria-label={`Remplir avec le compte ${a.role}, ${a.name}`}
+            >
+              Remplir
+            </button>
+          </li>
+        ))}
+      </ul>
+      {accounts.length < DEMO_ACCOUNTS.length && (
+        <p className="mt-2 text-[13px] text-soil-muted">Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
+      )}
+    </section>
   );
 }
 
@@ -245,13 +299,13 @@ export function Login() {
           .
         </p>
       </section>
-      <div className="mt-6 rounded-2xl bg-surface-raised p-4 text-[14px]">
-        <p className="font-semibold">
-          Comptes de démonstration <Demo />
-        </p>
-        <p className="mt-1">Producteurs : 01 97 00 00 01 (Parakou), 01 97 00 00 04 (Bohicon) · Acheteur : 01 96 00 00 01 · PIN 1234.</p>
-        <p className="mt-1 text-soil-muted">Les comptes agent, commune et conseiller ont un PIN communiqué au jury.</p>
-      </div>
+      <DemoAccounts
+        onPick={(a) => {
+          setPhone(a.phone);
+          setPin(a.pin);
+          setError('');
+        }}
+      />
     </Shell>
   );
 }

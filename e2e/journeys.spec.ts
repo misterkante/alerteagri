@@ -254,3 +254,14 @@ test.describe('Onboarding without an advisor', () => {
     await expect(page.getByRole('alert')).toContainText('pas identiques');
   });
 });
+
+test.describe('Demo accounts on the sign-in screen', () => {
+  test('one tap fills a demo account, then the producer signs in', async ({ page }) => {
+    await page.goto('/connexion');
+    await page.getByRole('button', { name: /Remplir avec le compte Productrice · Parakou/ }).click();
+    await expect(page.getByLabel('Numéro de téléphone')).toHaveValue('01 97 00 00 01');
+    await expect(page.getByLabel('Code PIN (4 chiffres)')).toHaveValue('1234');
+    await page.getByRole('button', { name: 'Entrer' }).click();
+    await expect(page).toHaveURL(/\/producteur$/);
+  });
+});

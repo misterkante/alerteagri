@@ -2,7 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Browser tests run against the production build of the web app (vite preview, PWA included)
 // and the real API on a seeded PostgreSQL. CI provides the database; locally, docker on 5437.
-const API = 'http://localhost:3000';
+// Another project may already listen on 3000: E2E_API_PORT moves the API elsewhere.
+const API_PORT = process.env.E2E_API_PORT ?? '3000';
+const API = `http://localhost:${API_PORT}`;
 const WEB = 'http://localhost:4173';
 const CI = !!process.env.CI;
 // A system Chromium can stand in for the bundled one on machines where it cannot be downloaded.
@@ -43,7 +45,7 @@ export default defineConfig({
       reuseExistingServer: !CI,
       timeout: 180_000,
       env: {
-        PORT: '3000',
+        PORT: API_PORT,
         CORS_ORIGINS: WEB,
         // One login per role in global setup, but the suite runs four projects.
         LOGIN_LIMIT_PER_MIN: '100',

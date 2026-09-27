@@ -2,7 +2,7 @@ import { request, type FullConfig } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const API = 'http://localhost:3000';
+export const API = `http://localhost:${process.env.E2E_API_PORT ?? '3000'}`;
 export const STATE_DIR = join(__dirname, '.auth');
 
 // Seeded accounts (backend/prisma/seed.ts). Producers share the public demo PIN;

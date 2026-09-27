@@ -23,6 +23,8 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        // The presentation video is a file, not a page of the app.
+        navigateFallbackDenylist: [/^\/demo\//],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,

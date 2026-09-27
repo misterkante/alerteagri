@@ -6,9 +6,9 @@
 
 ## La plateforme en vidéo
 
-[![AlerteAgri en usage : producteurs, conseillers, agents ATDA, acheteurs et mairies (4 min)](docs/presentation/demo-cover.jpg)](docs/presentation/AlerteAgri-demo.mp4)
+[![AlerteAgri en usage : producteurs, conseillers, agents ATDA, acheteurs et mairies (4 min)](docs/presentation/demo-cover.jpg)](https://alerteagri.vercel.app/demo/AlerteAgri-demo.mp4)
 
-Quatre minutes, enregistrées sur la plateforme en ligne avec les comptes de démonstration : une productrice signale des chenilles, une conseillère inscrit et signale pour un producteur sans smartphone, l'agent ATDA valide et l'alerte part vers les communes voisines, la productrice confirme la lecture et l'action, un téléphone simple vérifie un pesticide par USSD, une coopérative achète et reçoit un reçu signé, n'importe qui le vérifie par QR code, et la mairie encaisse la taxe communale. [Télécharger la vidéo (MP4, 7 Mo)](docs/presentation/AlerteAgri-demo.mp4).
+Quatre minutes, enregistrées sur la plateforme en ligne avec les comptes de démonstration : une productrice signale des chenilles, une conseillère inscrit et signale pour un producteur sans smartphone, l'agent ATDA valide et l'alerte part vers les communes voisines, la productrice confirme la lecture et l'action, un téléphone simple vérifie un pesticide par USSD, une coopérative achète et reçoit un reçu signé, n'importe qui le vérifie par QR code, et la mairie encaisse la taxe communale. La vidéo se lit dans le navigateur : [https://alerteagri.vercel.app/demo/AlerteAgri-demo.mp4](https://alerteagri.vercel.app/demo/AlerteAgri-demo.mp4) (MP4, 7 Mo)..
 
 ## Le problème
 

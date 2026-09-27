@@ -153,6 +153,10 @@ export function Home() {
         <a className="font-semibold text-leaf underline" href={`${API_URL}/docs`}>
           API ouverte
         </a>
+        .{' '}
+        <a className="font-semibold text-leaf underline" href="/demo/AlerteAgri-demo.mp4">
+          Vidéo de présentation
+        </a>
         . Contact : Gilchrist Kanté,{' '}
         <a className="font-semibold text-leaf underline" href="tel:+2290191026911">
           01 91 02 69 11

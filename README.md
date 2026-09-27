@@ -4,6 +4,12 @@
 
 **En ligne** : application https://alerteagri.vercel.app · API et documentation https://alerteagri.onrender.com/docs
 
+## La plateforme en vidéo
+
+[![AlerteAgri en usage : producteurs, conseillers, agents ATDA, acheteurs et mairies (4 min)](docs/presentation/demo-cover.jpg)](docs/presentation/AlerteAgri-demo.mp4)
+
+Quatre minutes, enregistrées sur la plateforme en ligne avec les comptes de démonstration : une productrice signale des chenilles, une conseillère inscrit et signale pour un producteur sans smartphone, l'agent ATDA valide et l'alerte part vers les communes voisines, la productrice confirme la lecture et l'action, un téléphone simple vérifie un pesticide par USSD, une coopérative achète et reçoit un reçu signé, n'importe qui le vérifie par QR code, et la mairie encaisse la taxe communale. [Télécharger la vidéo (MP4, 7 Mo)](docs/presentation/AlerteAgri-demo.mp4).
+
 ## Le problème
 
 - L'agriculture fait 25,4 % du PIB et 59,1 % des recettes d'exportation du Bénin (2025), et emploie près de 70 % des actifs.
@@ -48,9 +54,9 @@ Le monitoring fonctionne de bout en bout : relevé météo réel (Open-Meteo, 77
 | Producteur (Parakou) | 01 97 00 00 01 | 1234 |
 | Producteur (Bohicon) | 01 97 00 00 04 | 1234 |
 | Acheteur | 01 96 00 00 01 | 1234 |
-| Agent ATDA, commune de Parakou, conseiller, administrateur | 01 90 00 00 02, 01 90 00 00 03, 01 90 00 00 04, 01 90 00 00 01 | communiqué au jury |
+| Agent ATDA, mairie de Parakou, conseillère | 01 90 00 00 02, 01 90 00 00 03, 01 90 00 00 04 | affiché sur l'écran de connexion |
 
-Parcours de démonstration : [`docs/DEMO.md`](docs/DEMO.md).
+Sur l'écran de connexion, chaque compte a un bouton « Remplir » : un geste, puis « Entrer ». Parcours de démonstration : [`docs/DEMO.md`](docs/DEMO.md).
 
 Ce qui est simulé est marqué « démo » dans l'interface : l'envoi réel des SMS, le code USSD opérateur, le paiement mobile money, les barèmes de TDL, les prix de référence et la liste d'intrants (hors SNIPER, réellement retiré du marché en juillet 2026). Aucune donnée fictive n'est présentée comme réelle.
 
@@ -115,3 +121,7 @@ Déploiement : l'API et sa base sur Render (`render.yaml`), l'interface sur Verc
 ## Stack
 
 NestJS 11, Prisma, PostgreSQL (Supabase), React 18, Vite, Tailwind, PWA (Workbox), thème clair et sombre. Interface alignée sur la charte graphique du gouvernement béninois (Montserrat, vert du drapeau, filet tricolore), nombres et heures à la béninoise. Sécurité : helmet, CORS restreint, limitation de débit, validation stricte des entrées, rôles vérifiés côté serveur, journal d'audit, reçus signés par HMAC, fichiers audio validés par leur contenu.
+
+## Contact
+
+Gilchrist Kanté · [+229 01 91 02 69 11](tel:+2290191026911)
